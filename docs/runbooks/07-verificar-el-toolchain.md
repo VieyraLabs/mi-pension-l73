@@ -10,7 +10,7 @@ documentar como deuda.
 
 | Componente | Versión esperada | Notas |
 | --- | --- | --- |
-| Node.js | 22 | Fijado en los 5 workflows de CI (`setup-node`) |
+| Node.js | 22 | Fijado en los 3 workflows que instalan Node (`setup-node`): `ci.yml`, `codeql.yml` y `deploy-staging.yml` |
 | Expo SDK | 57 | `expo ~57.x`; deployment target iOS 16.4 (`app.json` → `expo-build-properties`) |
 | React Native | 0.86.x | Versiones de parche pueden quedar atrás de lo esperado por el SDK (ver deuda) |
 | CocoaPods | instalado localmente | `ios/Podfile.lock` SÍ se versiona (271 pods) — ver `.gitignore`: "NO ignorar Podfile.lock en apps" |
@@ -62,17 +62,48 @@ npx pod-install
 los tres en el mismo cambio. Un lock desfasado del manifest es exactamente el
 tipo de diferencia que solo explota en la máquina de quien hace el build.
 
-### 5. Verificar CI
+### 5. Regenerar el proyecto nativo iOS cuando cambia una dependencia nativa
 
-Los 5 workflows (`ci.yml`, `deploy-staging.yml`, `promotion-gate.yml`,
-`release.yml`, `codeql.yml`) no construyen iOS: la prueba de que el proyecto
-sigue compilando para iOS es local (`expo prebuild`/Xcode) y el lint de
-`Podfile.lock` es la disciplina de commit del paso 4.
+`ios/` está versionado y EAS Build **no** ejecuta prebuild cuando el directorio
+nativo existe: compila el `ios/` commiteado tal cual. Android no tiene directorio
+versionado, así que EAS lo genera siempre en la nube. Esa asimetría significa que
+un cambio de dependencia nativa sin regenerar `ios/` produce un binario de iOS con
+código nativo viejo, y el error no aparece hasta que la app falla en el dispositivo.
+
+Por eso, cuando el cambio toca una dependencia nativa (`expo-updates`, un plugin con
+código nativo, un SDK de Expo):
+
+```bash
+npx expo prebuild --platform ios
+npx pod-install
+git diff ios/          # revisar: aquí se ve lo que cambió
+```
+
+Se commitea `ios/` **en el mismo cambio** que `package.json` y `package-lock.json`.
+
+> El `git diff ios/` hay que leerlo, no aceptarlo a ciegas: si desaparece algo que no
+> se esperaba (un asset, un ajuste manual), hay que entender por qué antes de
+> commitear.
+
+### 6. Verificar CI
+
+De los 5 workflows, sólo `release.yml` construye iOS, y lo hace **en la nube de EAS**,
+no en el runner: el runner de GitHub es Linux y compilar iOS requiere macOS y Xcode.
+La prueba local de que el proyecto sigue compilando para iOS sigue siendo
+`expo prebuild`/Xcode (paso 5) y el lint de `Podfile.lock` es la disciplina de commit
+del paso 4.
+
+Los dos workflows que dependen de las actualizaciones (`release.yml` y
+`deploy-staging.yml`) comprueban que `ios/MiPensionMX/Supporting/Expo.plist` tenga
+`EXUpdatesEnabled` en `True` y el mismo `EXUpdatesURL` que `app.json`. Con el
+repositorio sin vincular a EAS, esas comprobaciones fallan: es el comportamiento
+correcto, no un falso positivo.
 
 ## Verificación
 
 - [ ] `expo-doctor` sin errores reales (solo deuda documentada aquí).
 - [ ] Si cambió `package.json` con deps nativas: `Podfile.lock` regenerado y commitado.
+- [ ] Si el cambio toca el nativo de iOS: `ios/` regenerado con `npx expo prebuild --platform ios`, `git diff ios/` revisado, y el resultado commiteado.
 - [ ] Suite en verde (`npm run test:run`).
 - [ ] Los thresholds de cobertura (`package.json` → `coverageThreshold`) siguen
       siendo pisos por debajo de la cobertura real — si un piso quedó por

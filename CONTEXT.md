@@ -16,7 +16,9 @@ cotización y obtiene una estimación con el desglose de cómo se calculó, paso
 la referencia legal de cada paso.
 
 No está publicada en ninguna tienda. No hay cuentas, no hay backend y no hay servicios de
-terceros que reporten datos del usuario.
+terceros que reporten datos del usuario. El único tercero con el que habla la app es el
+servicio de actualizaciones de Expo, que recibe el identificador de instalación, la versión
+y la plataforma, y nada más ([ADR-0017](docs/adr/0017-el-tag-produce-los-instalables-del-release.md)).
 
 ## Por qué existe
 
@@ -114,8 +116,9 @@ App.tsx                     Raíz de la app
   que quien compare su resultado con la respuesta oficial sepa dónde puede haber
   diferencia.
 - **5 workflows de CI**: tipos y lint, pruebas fragmentadas en tres shards, cobertura,
-  empaquetado web, CodeQL, release por etiqueta, deploy a staging y **puerta de
-  promoción** que exige aprobación humana antes de autorizar un release a producción.
+  empaquetado web, CodeQL, release por etiqueta (que compila los instalables de Android e
+  iOS y los adjunta al release), deploy a staging y **puerta de promoción** que exige
+  aprobación humana antes de autorizar un release a producción.
 
 ## Lo que este proyecto no es
 

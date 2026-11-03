@@ -1,6 +1,6 @@
 # ADR-0009 — Cero telemetría y cero servicios de terceros
 
-- **Estado**: Aceptada
+- **Estado**: Aceptada (límite de servicios de terceros ampliado por [ADR-0017](0017-el-tag-produce-los-instalables-del-release.md))
 - **Fecha**: 2026-08-01
 - **Ámbito**: arquitectura general, `package.json`
 

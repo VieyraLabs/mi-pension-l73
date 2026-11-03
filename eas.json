@@ -12,6 +12,14 @@
       "distribution": "internal",
       "channel": "staging"
     },
+    "release": {
+      "distribution": "internal",
+      "channel": "production",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "channel": "production",
       "autoIncrement": true

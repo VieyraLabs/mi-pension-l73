@@ -18,6 +18,7 @@ Una spec no explica por qué el sistema es así: eso es trabajo de las
 | [07](07-historial-de-cotizacion-y-promedio-sbc.md) | Historial de cotización y promedio del SBC | `contributionHistory.test.ts`, `personalDataParser.test.ts`, `ValidationScreen.test.tsx` |
 | [08](08-tema-claro-y-oscuro.md) | Tema claro y oscuro | Manual + componentes compartidos |
 | [09](09-alcance-de-la-estimacion-y-aviso-legal.md) | Alcance de la estimación y aviso legal | `pdfExport.test.ts` + `EstimationDisclaimerCard` |
+| [10](10-actualizaciones-ota.md) | Actualizaciones por OTA | Verificación manual del canal + guardas de los workflows |
 
 ## Formato
 

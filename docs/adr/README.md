@@ -23,7 +23,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0006](0006-el-resultado-es-un-desglose-auditable.md) | El resultado es un desglose auditable de pasos, no un número | Aceptada | 2026-08-01 |
 | [0007](0007-navegacion-con-react-navigation.md) | React Navigation v7 con Stack y Bottom Tabs | Aceptada | 2026-08-01 |
 | [0008](0008-tema-material-design-3-claro-y-oscuro.md) | Tema Material Design 3 con modo claro y oscuro | Aceptada (paleta sustituida por [0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md)) | 2026-08-01 |
-| [0009](0009-cero-telemetria-y-cero-servicios-de-terceros.md) | Cero telemetría y cero servicios de terceros | Aceptada | 2026-08-01 |
+| [0009](0009-cero-telemetria-y-cero-servicios-de-terceros.md) | Cero telemetría y cero servicios de terceros | Aceptada (límite de servicios de terceros ampliado por [0017](0017-el-tag-produce-los-instalables-del-release.md)) | 2026-08-01 |
 | [0010](0010-sbc-promedio-desde-el-historial-de-cotizaciones.md) | El SBC promedio se calcula del historial completo de cotizaciones | Aceptada | 2026-08-01 |
 | [0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md) | Sistema de diseño esmeralda con superficies degradadas | Aceptada | 2026-10-26 |
 | [0012](0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md) | El motor proyecta las semanas hasta la edad de retiro y calcula con esas semanas | Sustituida por ADR-0013 | 2026-10-26 |
@@ -31,6 +31,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0014](0014-modalidad-10-incorporacion-voluntaria-al-régimen-obligatorio.md) | Usar la Modalidad 10 como incorporación voluntaria y proyectar sus meses dentro del SBC promedio | Aceptada | 2026-10-30 |
 | [0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md) | Calcular la cuota de la Modalidad 10 con la estructura de financiamiento oficial del IMSS | Aceptada | 2026-10-30 |
 | [0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md) | Usar el catálogo oficial de ocupaciones del IMSS para la Modalidad 10 | Aceptada | 2026-10-30 |
+| [0017](0017-el-tag-produce-los-instalables-del-release.md) | El tag produce los instalables del release | Aceptada | 2026-11-03 |
 
 ## Formato
 

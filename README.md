@@ -5,8 +5,8 @@
 > y **sin telemetría**: todo el cálculo y todos los datos del usuario viven en el
 > dispositivo. La diferencia del producto no es el formulario: es que **el resultado es
 > auditable** — cada número viene con su fórmula, su fundamento legal y la marca de si
-> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **146 pruebas**
-> en 13 suites, **5 workflows de CI** con puerta de promoción.
+> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **459 pruebas**
+> en 36 suites, **5 workflows de CI** con puerta de promoción.
 
 Aplicación móvil desarrollada con **React Native 0.86 + Expo SDK 57 + TypeScript** para
 estimar pensiones bajo la **Ley del Seguro Social de 1973 (Ley 73)**.
@@ -42,13 +42,13 @@ take to a government office, so it has to be explainable.
   over the last **250 *contributed* weeks** (not 250 calendar weeks).
 - **One source of truth for validation.** A Zod schema drives both the forms and the
   calculation engine, with the legal article cited in the error message.
-- **146 tests across 13 suites**, 89.6 % statement / 96.2 % function coverage on the
+- **459 tests across 36 suites**, 89.6 % statement / 96.2 % function coverage on the
   decision-making code.
 - **5 CI workflows**, including a promotion gate that requires human approval before a
   release is authorized.
 
-**Docs:** [`docs/adr/`](docs/adr/) (10 architecture decision records),
-[`docs/spec/`](docs/spec/) (9 behavioural specs),
+**Docs:** [`docs/adr/`](docs/adr/) (17 architecture decision records),
+[`docs/spec/`](docs/spec/) (10 behavioural specs),
 [`docs/runbooks/`](docs/runbooks/) (7 operational procedures), plus
 [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
 
@@ -123,8 +123,8 @@ Cada paso:
 
 | Carpeta | Qué contiene | Cantidad |
 |---|---|---|
-| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura: **por qué** el código es así | 10 ADR |
-| [`docs/spec/`](docs/spec/) | Comportamiento observable: **qué** hace el sistema | 9 specs |
+| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura: **por qué** el código es así | 17 ADR |
+| [`docs/spec/`](docs/spec/) | Comportamiento observable: **qué** hace el sistema | 10 specs |
 | [`docs/runbooks/`](docs/runbooks/) | Procedimientos: **cómo** se hace cada tarea repetida | 6 runbooks |
 | [`AGENTS.md`](AGENTS.md) | Contrato de trabajo para agentes de código | — |
 | [`CONTEXT.md`](CONTEXT.md) | Contexto del proyecto y del dominio | — |
@@ -134,7 +134,7 @@ Cada paso:
 ## 🧪 Pruebas
 
 ```bash
-npm run test:run       # 13 suites, 146 casos
+npm run test:run       # 36 suites, 459 casos
 npm run test:coverage  # con reporte de cobertura
 npm run typecheck
 npm run lint
@@ -168,7 +168,7 @@ constancia, exportación a PDF y persistencia del historial.
 |---|---|
 | [`ci.yml`](.github/workflows/ci.yml) | Tipos, lint, pruebas fragmentadas en 3 shards, cobertura y empaquetado web |
 | [`codeql.yml`](.github/workflows/codeql.yml) | Análisis de seguridad de CodeQL |
-| [`release.yml`](.github/workflows/release.yml) | Publica un release de GitHub por etiqueta, si CI está en verde |
+| [`release.yml`](.github/workflows/release.yml) | Compila Android e iOS en EAS por etiqueta y publica el release con los instalables adjuntos |
 | [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) | Build de preview y actualización OTA al canal `staging` |
 | [`promotion-gate.yml`](.github/workflows/promotion-gate.yml) | Verifica CI y staging, y **exige aprobación humana** antes de autorizar un release a producción |
 
@@ -176,8 +176,12 @@ Las acciones están fijadas por SHA de commit, no por etiqueta: una etiqueta pue
 re-apuntar, un commit no.
 
 La puerta de promoción produce el artefacto `AUTORIZACION.md` con el commit
-autorizado y el aprobador. **La publicación en producción es un procedimiento manual**
-(runbook 01), porque hoy no hay un proyecto de EAS vinculado ni publicación en tiendas.
+autorizado y el aprobador. **El tag `v*` es lo que autoriza la publicación**: el
+workflow `release.yml` compila Android e iOS en la nube de EAS y adjunta los
+instalables al release de GitHub. El APK es instalable en cualquier Android; el IPA es
+de distribución *ad hoc* y sólo instala en los dispositivos registrados en el perfil de
+aprovisionamiento. La configuración de una sola vez (proyecto de EAS vinculado,
+`EXPO_TOKEN`, credenciales de Apple) está en el runbook 01.
 
 ---
 
@@ -189,9 +193,12 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 - **Sin base de datos remota**: sin persistencia en servidores
 - El historial de simulaciones se guarda únicamente en `AsyncStorage` local
 - La importación de PDFs se procesa 100 % localmente
+- El canal de actualizaciones de Expo recibe sólo el identificador de instalación, la
+  versión y la plataforma: ningún dato del usuario
 
-> Ver [ADR-0002](docs/adr/0002-cero-backend-todo-en-el-dispositivo.md) y
-> [ADR-0009](docs/adr/0009-cero-telemetria-y-cero-servicios-de-terceros.md).
+> Ver [ADR-0002](docs/adr/0002-cero-backend-todo-en-el-dispositivo.md),
+> [ADR-0009](docs/adr/0009-cero-telemetria-y-cero-servicios-de-terceros.md) y
+> [ADR-0017](docs/adr/0017-el-tag-produce-los-instalables-del-release.md).
 
 ---
 
