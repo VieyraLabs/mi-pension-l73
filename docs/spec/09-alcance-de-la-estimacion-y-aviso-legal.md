@@ -26,13 +26,28 @@ fila.
 - **El aviso legal es parte del resultado, no un elemento opcional de la interfaz.** El
   motor lo agrega a `warnings[]`, de modo que no se puede mostrar un resultado sin él.
 - **Cada supuesto se declara donde ocurre.** Un paso estimado lleva su propio
-  `assumption` (por ejemplo, el promedio ponderado de Modalidad 40), que se muestra en la
+  `assumption` (por ejemplo, el promedio con meses de Modalidad 10), que se muestra en la
   fila del desglose y no en un aviso genérico al final.
 - **Los porcentajes de la tabla del Art. 167 están marcados como referencia
   bibliográfica** en el propio archivo de constantes. La app no afirma tener la tabla
   oficial verificada.
+- **La cuota de la Modalidad 10 tiene fuente primaria y la app lo dice.** La estructura
+  reproducida es la de la calculadora oficial del IMSS para Personas Trabajadoras
+  Independientes y la del Cuadro A.3 del Anexo A al Informe al Consejo Técnico 2025-2026;
+  la clase de riesgo también viene del catálogo oficial de ocupaciones del IMSS
+  ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md),
+  [ADR-0016](../adr/0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)). Lo que la
+  app **no** afirma es que el grupo elegido por la persona sea el correcto: de eso depende
+  la prima, y el IMSS lo determina con su expediente.
+- **La diferencia entre la cuota mostrada y la línea de captura del IMSS está declarada.**
+  La calculadora oficial multiplica por los días reales del mes de pago y la app usa 30.4
+  días por mes (su convención para el SBC mensual). La fórmula se comprobó contra una
+  línea de captura real de 30 días (25 UMA, clase III): $18,584.02 contra los $18,584
+  observados; con los 30.4 días de la app la cuota es $18,831.81.
 - **El texto educativo de la sección de información** (`infoLegal.ts`) explica el marco
-  normativo y los conceptos que la app usa (UMA, SMG, Modalidad 40, pensión de vejez).
+  normativo y los conceptos que la app usa (UMA, SMG, Modalidad 10, pensión de vejez),
+  incluida la duda de si el salario del patrón y el de la Modalidad 10 se suman en el
+  promedio de las 250 semanas.
 
 ## Fuera de alcance
 

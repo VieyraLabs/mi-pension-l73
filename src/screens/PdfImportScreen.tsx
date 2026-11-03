@@ -7,8 +7,10 @@ import { Text, Card, Button, useTheme, ActivityIndicator, Chip } from 'react-nat
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { BUTTON_RADIUS } from '../theme';
 import { importPdf } from '../services/pdf/PdfImporter';
 import { MessageBanner } from '../components/MessageBanner';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -40,17 +42,10 @@ export default function PdfImportScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
     >
-      {/* Header */}
-      <Card style={[styles.headerCard, { backgroundColor: theme.colors.primary }]} elevation={3}>
-        <Card.Content style={{ alignItems: 'center', padding: 20 }}>
-          <Text variant="headlineSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', textAlign: 'center' }}>
-            📄 Importar Constancia IMSS
-          </Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.onPrimary, opacity: 0.9, textAlign: 'center', marginTop: 8 }}>
-            Importa tu Constancia de Semanas Cotizadas en PDF para extraer los datos automáticamente
-          </Text>
-        </Card.Content>
-      </Card>
+      <ScreenHeader
+        title="Importar Constancia IMSS"
+        subtitle="Importa tu Constancia de Semanas Cotizadas en PDF para extraer los datos automáticamente"
+      />
 
       {/* Instrucciones */}
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
@@ -132,11 +127,10 @@ export default function PdfImportScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  headerCard: { borderRadius: 16, marginBottom: 16 },
-  card: { borderRadius: 12, marginBottom: 16 },
+  card: { borderRadius: 16, marginBottom: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { marginBottom: 4 },
   loadingContainer: { alignItems: 'center', padding: 24 },
-  mainBtn: { borderRadius: 8, marginBottom: 12 },
-  backBtn: { borderRadius: 8 },
+  mainBtn: { borderRadius: BUTTON_RADIUS, marginBottom: 12 },
+  backBtn: { borderRadius: BUTTON_RADIUS },
 });

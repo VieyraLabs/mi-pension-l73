@@ -17,7 +17,6 @@ import type { PensionInput } from '../models';
 function buildResult() {
   const input: PensionInput = {
     personalData: {
-      sex: 'masculino',
       birthDate: new Date(1960, 0, 1),
       age: 65,
       estimatedRetirementDate: new Date(2025, 0, 1),
@@ -26,7 +25,7 @@ function buildResult() {
     workHistory: { totalWeeks: 500, employmentRelations: [] },
     averageSalary: { dailySalary: 200, monthlySalary: 6080, isManual: true },
     uma: { dailyUMA: 113.14, monthlyUMA: 3439.46, annualUMA: 41296.1, year: 2025, isCustom: false },
-    modalidad40: { active: false },
+    modalidad10: { active: false },
     beneficiaries: {
       hasSpouse: false,
       hasMinorChildren: false,

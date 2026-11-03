@@ -47,9 +47,21 @@ documentan el patrón:
   columnas de `pdfjs-dist`.
 - `4bf9a86` — detección de la columna de movimiento salarial y ventana de referencia del
   SBC promedio.
+- Fila de movimiento `ALTA` — el IMSS emite un `ALTA` (el alta original de un empleo, con
+  su SBC inicial) que el parser no reconocía. Su monto se colaba en la lista de SBC de
+  encabezado, el conteo no cuadraba con el número de patrones y **todo** el historial se
+  descartaba: el PDF traía la tabla completa y la app decía que no la traía. Al agregarlo
+  se corrige además la fragilidad de fondo: el SBC de encabezado se ancla a su etiqueta, así
+  que un monto desconocido ya no tumba la reconstrucción.
 
 **El orden de las columnas del documento cambia entre versiones.** No se arregla con un
 regex más permisivo sin más: se mira qué emite el IMSS ahora y se ajusta el parser.
+
+**Un tipo de movimiento que no se reconoce es un fallo total, no parcial.** Antes de tocar
+el regex, cuenta los tipos de movimiento que aparecen en la columna del documento (en el
+texto crudo, los valores de esa columna) y compáralos con los que el parser acepta
+(`REINGRESO`, `ALTA`, `MODIFICACION DE SALARIO`, `BAJA`). Si hay uno de más, ese es el
+fallo.
 
 ### 4. Ajustar el parser
 
@@ -58,6 +70,11 @@ regex más permisivo sin más: se mira qué emite el IMSS ahora y se ajusta el p
 - Los patrones deben tolerar la variación de **orden** de columnas, no solo de espacios.
 - Cada campo tiene su propio patrón; no se depende de un único regex global.
 - Un campo que no se encuentra debe quedar **sin valor**, no con un valor aproximado.
+- El SBC de encabezado de cada patrón se **ancla a su etiqueta**, no se identifica contando
+  montos sueltos: si se cuenta, cualquier dato que no se sepa a qué pertenece descuadra el
+  emparejamiento y tumba el historial completo.
+- El emparejamiento por patrón solo se abandona por **estructura** (altas, nombres o
+  montos de encabezado que no cuadran). Un monto sin atribuir se advierte, no se tira todo.
 
 ### 5. Probar con el texto real
 

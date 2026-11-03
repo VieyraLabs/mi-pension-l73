@@ -8,11 +8,16 @@ import type {
   CalculationStepResult,
   PensionType,
 } from '../../models';
+import type { WeeksProjection } from '../../utils/weeksProjection';
 
 /** Contexto inmutable que se pasa entre los pasos del pipeline. */
 export interface CalculationContext {
   readonly input: PensionInput;
-  /** Salario diario efectivo (ya topado y ajustado por M40) */
+  /** Proyección de semanas hasta la edad de retiro (ya cotizadas + proyectadas) */
+  weeksProjection: WeeksProjection;
+  /** Semanas M10 planeadas por fechas, solo para los pasos internos del cálculo. */
+  m10PlannedWeeks: number;
+  /** Salario diario efectivo (ya topado y ajustado por M10) */
   effectiveDailySalary: number;
   /** Salario en veces el SMG (para buscar rango en tabla Art. 167) */
   salaryInTimesMinimumWage: number;

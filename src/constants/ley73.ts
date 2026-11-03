@@ -7,7 +7,15 @@
  * NOTA LEGAL: Toda la información aquí contenida es de referencia. La resolución
  * oficial de pensiones corresponde exclusivamente al IMSS conforme a sus
  * procedimientos institucionales. Los resultados de esta aplicación son ESTIMACIONES.
+ *
+ * PROVENANCIA DOCUMENTAL (CHG-20261024-002 / US-005): cada constante exportada
+ * lleva comentario de fuente (artículo de la Ley o Reglamento, publicación DOF
+ * de origen) y vigencia aplicable. Al agregar o modificar una constante, ese
+ * registro es un paso OBLIGATORIO del procedimiento: ver
+ * docs/runbooks/05-actualizar-uma-y-constantes-legales.md (paso 5).
  */
+
+import type { RiskClass } from '../models';
 
 // ─────────────────────────────────────────────
 // Tabla del Artículo 167 LSS 1973
@@ -187,26 +195,46 @@ export const ART167_TABLE: readonly Art167TableEntry[] = [
   },
 ] as const;
 
-/** Días promedio por mes usados por UMA/IMSS para conversión mensual. */
+/**
+ * Días promedio por mes para conversión mensual de UMA.
+ * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (el valor mensual se
+ * obtiene multiplicando el diario por 30.4).
+ * Publicación: DOF 27-ene-2016. Vigente — factor fijado por la propia ley.
+ */
 export const AVERAGE_DAYS_PER_MONTH = 30.4;
 
-/** Días por año para cálculo anual de UMA. */
+/**
+ * Días por año para cálculo anual de UMA.
+ * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (el valor anual se
+ * obtiene multiplicando el diario por 365).
+ * Publicación: DOF 27-ene-2016. Vigente — factor fijado por la propia ley.
+ */
 export const DAYS_PER_YEAR_UMA = 365;
 
-/** Meses por año para cálculo anual de pensión. */
+/**
+ * Meses por año para cálculo anual de pensión.
+ * Fuente: constante aritmética — sin fundamento normativo (conversión de la
+ * cuantía mensual a anual). Aplica para todo año de calendario.
+ */
 export const MONTHS_PER_YEAR = 12;
 
 // ─────────────────────────────────────────────
 // Factores de edad — Cesantía en Edad Avanzada
-// Arts. 139–140 LSS 1973
+// Art. 171 LSS 1973
 // ─────────────────────────────────────────────
 
 /**
  * Factor de reducción por retiro anticipado (Cesantía en Edad Avanzada).
- * Art. 139 LSS 1973: El asegurado con 60 años y 500 semanas puede pensionarse
- * con un porcentaje reducido de la cuantía de vejez.
  *
- * Fuente: Art. 139 LSS 1973 (DOF 12-mar-1973 y sus reformas).
+ * Art. 171 LSS 1973: "Cuantía de la pensión expresada en % de la cuantía de la
+ * pensión de vejez que le hubiera correspondido al asegurado de haber alcanzado
+ * 65 años": 60 → 75 %, 61 → 80 %, 62 → 85 %, 63 → 90 %, 64 → 95 %.
+ *
+ * Párrafo final del mismo artículo (DOF 12-mar-1973): "Se aumentará un año a
+ * los cumplidos cuando la edad los exceda en seis meses." Esa regla la aplica
+ * el motor al calcular la EDAD LEGAL (ver `calculateLegalAge` en utils/date.ts).
+ *
+ * Fuente: Art. 171 LSS 1973 (DOF 12-mar-1973 y sus reformas).
  */
 export const CESANTIA_AGE_FACTORS: Readonly<Record<number, number>> = {
   60: 0.75,
@@ -217,29 +245,61 @@ export const CESANTIA_AGE_FACTORS: Readonly<Record<number, number>> = {
   65: 1.0, // Pensión de vejez = 100%
 } as const;
 
-/** Edad mínima para Cesantía en Edad Avanzada (Art. 138 LSS 1973) */
+/**
+ * Edad mínima para Cesantía en Edad Avanzada.
+ * Fuente: Art. 145 LSS 1973 (500 semanas cotizadas, 60 años cumplidos y estar
+ * privado de trabajo). Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
+ * Vigencia: régimen de transición (asegurados en el régimen Ley 73 — alcance
+ * explícito de esta app).
+ */
 export const MINIMUM_CESANTIA_AGE = 60;
 
-/** Edad para Pensión de Vejez (Art. 145 LSS 1973) */
+/**
+ * Edad para Pensión de Vejez.
+ * Fuente: Art. 138 LSS 1973 (500 semanas cotizadas y 65 años cumplidos).
+ * Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
+ * Vigencia: régimen de transición (alcance de esta app).
+ */
 export const VEJEZ_AGE = 65;
 
 // ─────────────────────────────────────────────
 // Semanas mínimas de cotización
 // ─────────────────────────────────────────────
 
-/** Semanas mínimas para Vejez (Art. 145 LSS 1973) */
+/**
+ * Semanas mínimas de cotización para Pensión de Vejez.
+ * Fuente: Art. 138 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ * Vigencia: régimen de transición (alcance de esta app).
+ */
 export const MINIMUM_WEEKS_VEJEZ = 500;
 
-/** Semanas mínimas para Cesantía en Edad Avanzada (Art. 138 LSS 1973) */
+/**
+ * Semanas mínimas de cotización para Cesantía en Edad Avanzada.
+ * Fuente: Art. 145 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ * Vigencia: régimen de transición (alcance de esta app).
+ */
 export const MINIMUM_WEEKS_CESANTIA = 500;
 
-/** Semanas consideradas para el promedio del SBC (Art. 167 LSS 1973) */
+/**
+ * Semanas consideradas para el promedio del SBC (últimas 250 semanas cotizadas
+ * dentro de los 5 años anteriores a la fecha de referencia).
+ * Fuente: Art. 167 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ */
 export const SBC_AVERAGE_WEEKS = 250;
 
-/** Semanas que representan un año cotizado (para incrementos anuales) */
+/**
+ * Semanas que representan un año cotizado (base de los incrementos anuales).
+ * Fuente: Art. 167 LSS 1973 — el incremento procede "por cada año completo"
+ * de cotización excedente, entendido como 52 semanas (criterio operativo IMSS).
+ * Publicación: DOF 12-mar-1973 (y reformas).
+ */
 export const WEEKS_PER_YEAR = 52;
 
-/** Semanas promedio por mes (52 ÷ 12), para proyectar meses de Modalidad 40 a semanas. */
+/**
+ * Semanas promedio por mes (52 ÷ 12), para proyectar meses de Modalidad 40 a semanas.
+ * Fuente: derivada de WEEKS_PER_YEAR (52 semanas/año, criterio operativo IMSS,
+ * Art. 167 LSS 1973). No es un valor normativo independiente.
+ */
 export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
 
 // ─────────────────────────────────────────────
@@ -248,34 +308,42 @@ export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
 // ─────────────────────────────────────────────
 
 /**
- * Asignación familiar por cónyuge o concubina/o.
- * Art. 164, fracción I, LSS 1973.
+ * Asignación familiar por cónyuge o concubina/o (15% de la cuantía).
+ * Fuente: Art. 164, fracción I, LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const SPOUSE_ALLOWANCE_PCT = 0.15;
 
 /**
- * Asignación familiar por cada hijo menor (hasta 16 años, o sin límite si incapacitado).
- * Art. 164, fracción II, LSS 1973.
+ * Asignación familiar por cada hijo menor (hasta 16 años, o sin límite si incapacitado)
+ * — 10% de la cuantía por hijo.
+ * Fuente: Art. 164, fracción II, LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const CHILD_ALLOWANCE_PCT = 0.10;
 
 /**
- * Asignación familiar por cada ascendiente dependiente económico
- * (cuando no hay cónyuge ni hijos).
- * Art. 164, fracción III, LSS 1973.
+ * Asignación familiar por cada ascendiente dependiente económico (10% de la
+ * cuantía por ascendiente, cuando no hay cónyuge ni hijos).
+ * Fuente: Art. 164, fracción III, LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const PARENT_ALLOWANCE_PCT = 0.10;
 
 /**
- * Ayuda asistencial cuando no hay beneficiarios con derecho a asignación familiar.
- * Art. 165 LSS 1973.
+ * Ayuda asistencial (15% de la cuantía) cuando no hay beneficiarios con derecho
+ * a asignación familiar.
+ * Fuente: Art. 165 LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const ASSISTANCE_AID_NO_BENEFICIARIES_PCT = 0.15;
 
 /**
- * Ayuda asistencial cuando el pensionado tiene cónyuge pero no hijos.
- * Art. 165 LSS 1973.
- * Nota: Esta ayuda aplica en ausencia de los beneficiarios mencionados en Art. 164.
+ * Ayuda asistencial (10% de la cuantía) cuando el pensionado tiene cónyuge pero
+ * no hijos.
+ * Fuente: Art. 165 LSS 1973. Nota: aplica en ausencia de los beneficiarios
+ * mencionados en Art. 164.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const ASSISTANCE_AID_SPOUSE_NO_CHILDREN_PCT = 0.10;
 
@@ -293,6 +361,7 @@ export const SBC_CAP_TIMES_UMA = 25;
 /**
  * La pensión mínima garantizada equivale al salario mínimo general vigente.
  * Art. 170 LSS 1973. Se actualiza conforme al SMG en vigor.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  *
  * NOTA: El IMSS usa el SMG de la zona del trabajador.
  * Para efectos de estimación se usa el SMG de CDMX (más alto).
@@ -310,9 +379,12 @@ export const PMG_EQUALS_SMG = true;
  * Máximo: 60 semanas (salvo disposición específica).
  *
  * Este cálculo aplica para determinar vigencia de la pensión.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const RIGHTS_PRESERVATION_FRACTION = 0.25;
-export const RIGHTS_PRESERVATION_MAX_WEEKS = 60; // (según criterio IMSS)
+// 60 semanas — criterio operativo IMSS de referencia (el Art. 182 fija la
+// fórmula; el tope práctico de 60 semanas no proviene de un texto legal directo).
+export const RIGHTS_PRESERVATION_MAX_WEEKS = 60;
 
 // ─────────────────────────────────────────────
 // Incremento del 11% (Decreto DOF 2001/2004)
@@ -331,19 +403,104 @@ export const RIGHTS_PRESERVATION_MAX_WEEKS = 60; // (según criterio IMSS)
 export const DECREE_11_INCREMENT = 0.11;
 
 // ─────────────────────────────────────────────
-// Modalidad 40
+// Incremento anual post-retiro por inflación (comparativa M10 vs pensionarse antes)
 // ─────────────────────────────────────────────
 
 /**
- * Artículo 218 del Reglamento de la LSS 1973 (antes Art. 218, actualmente en
- * el Reglamento de Incorporación y Recaudación del IMSS).
- * Permite al asegurado inscribirse voluntariamente con un SBC mayor al último
- * registrado, para incrementar su promedio de las últimas 250 semanas.
+ * Incremento anual post-retiro por inflación (promedio INPC 2022–2026).
+ *
+ * Las pensiones del régimen de la Ley 73 en curso de pago se incrementan
+ * cada febrero conforme a la inflación (INPC) del año anterior. Para la
+ * comparativa «contratar Modalidad 10 vs pensionarse lo antes posible» se
+ * usa una constante fija: el promedio aritmético simple de los incrementos
+ * de los últimos 5 años (febrero 2022 a febrero 2026) ≈ 5.55% anual.
+ *
+ * ⚠️ ESTIMACIÓN: valor de modelado; NO es una proyección neutral ni una
+ * garantía de los próximos años. El dato de 2025 (+3.69%) queda pendiente de
+ * confirmación contra el INPC publicado por INEGI (NOTE-004).
+ *
+ * Fuente: docs/investigacion/incremento-anual-pensiones-ley73-decretos.md.
+ * Vigencia: referencia a la serie 2022–2026; revisar anualmente según el
+ * runbook 05 (docs/runbooks/05-actualizar-uma-y-constantes-legales.md).
  */
-export const MODALIDAD_40_ARTICLE = 'Art. 218 Reglamento LSS 1973';
+export const ANNUAL_POST_RETIREMENT_INCREMENT = 0.0555; // ESTIMACIÓN
 
-/** El SBC de Modalidad 40 no puede ser menor al último SBC en el régimen obligatorio. */
-export const MODALIDAD_40_MINIMUM_SBC_EQUALS_LAST_MANDATORY = true;
+// ─────────────────────────────────────────────
+// Modalidad 10 — incorporación voluntaria al régimen obligatorio
+// ─────────────────────────────────────────────
 
-/** Tope máximo de Modalidad 40: 25 UMA diarias (igual que el régimen obligatorio). */
-export const MODALIDAD_40_CAP_TIMES_UMA = 25;
+/**
+ * Fundamento de la Modalidad 10: la incorporación voluntaria al régimen
+ * obligatorio, que se hace por convenio (capítulo IX de la LSS vigente,
+ * Arts. 222 a 233) y cuyos sujetos son los del Art. 13 fr. I — trabajadores
+ * independientes o por cuenta propia (fracción reformada DOF 01-dic-2023).
+ *
+ * La base de las cuotas son los ingresos reportados por la persona
+ * asegurada, acotados por los límites del Art. 28 (Art. 227 fr. I).
+ *
+ * Fuente: Ley del Seguro Social vigente, texto de la Cámara de Diputados,
+ * última reforma DOF 15-ene-2026.
+ */
+export const MODALIDAD_10_ARTICLE = 'Art. 222 LSS vigente (incorporación voluntaria)';
+
+/**
+ * El SBC de la Modalidad 10 no puede ser inferior al salario mínimo general
+ * del área geográfica del trabajador.
+ * Fuente: Art. 28 LSS vigente — "…estableciéndose como límite superior el
+ * equivalente a veinticinco veces el salario mínimo general que rija en el
+ * Distrito Federal y como límite inferior el salario mínimo general del área
+ * geográfica respectiva". La misma regla aparece en el Art. 33 LSS 1973.
+ *
+ * NOTA: el piso real depende de la zona geográfica. La app no la conoce y usa
+ * el SMG de la Zona A (CDMX), que es el más alto y por tanto el piso más
+ * restrictivo — el mismo criterio que ya se aplica a la pensión mínima
+ * garantizada (`PMG_EQUALS_SMG`).
+ */
+export const MODALIDAD_10_MINIMUM_IS_SMG_OF_ZONE = true;
+
+/**
+ * Tope máximo del SBC de la Modalidad 10: 25 UMA diarias, el mismo límite de
+ * cotización del régimen obligatorio.
+ * Fuente: Art. 28 LSS vigente (límite superior) y Art. 227 fr. I (los límites
+ * del Art. 28 aplican al cálculo de las cuotas de la incorporación voluntaria).
+ */
+export const MODALIDAD_10_CAP_TIMES_UMA = 25;
+
+/**
+ * Prima de Riesgos de Trabajo por clase laboral (Art. 71 LSS vigente, tabla de
+ * primas de RT). Es el componente de la cuota de Modalidad 10 que varía según
+ * la ocupación de la persona asegurada. Valores oficiales.
+ *
+ * La estructura completa de la cuota (tasas por ramo, excedente sobre 3 UMA y
+ * tabla de cesantía y vejez) vive en `src/constants/modalidad10Cuota.ts`.
+ */
+export const MODALIDAD_10_RT_PRIMA: Record<RiskClass, number> = {
+  1: 0.0054355,
+  2: 0.0113065,
+  3: 0.025984,
+  4: 0.0465325,
+  5: 0.0758875,
+};
+
+/** Etiquetas legibles de cada clase de riesgo laboral. */
+export const MODALIDAD_10_RISK_CLASS_LABELS: Record<RiskClass, string> = {
+  1: 'Clase I — riesgo mínimo',
+  2: 'Clase II — riesgo bajo',
+  3: 'Clase III — riesgo medio',
+  4: 'Clase IV — riesgo alto',
+  5: 'Clase V — riesgo máximo',
+};
+
+/**
+ * Contexto normativo (no altera el cálculo de esta app): el Acuerdo
+ * ACDO.AS2.HCT.101026/302.P.DG del Consejo Técnico del IMSS, aprobado el
+ * 10-oct-2026 y publicado en el DOF el 21-oct-2026 (vigente desde el
+ * 22-oct-2026), endureció las nuevas inscripciones a la Modalidad 40 —salario
+ * de cotización igual al último registrado o hasta una UMA por encima— y
+ * prohibió los pagos retroactivos.
+ *
+ * Ese acuerdo NO modifica la Modalidad 10; sí explica por qué el asegurado
+ * del régimen anterior conviene a la Modalidad 10 y por qué esta app no ofrece
+ * meses retroactivos (la cotización arranca el mes siguiente a la fecha de
+ * referencia, Art. 224 LSS vigente).
+ */

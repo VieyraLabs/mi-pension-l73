@@ -1,13 +1,23 @@
 /**
  * Tabla histórica de UMA (Unidad de Medida y Actualización) y SMG (Salario Mínimo General).
  * Fuente: INEGI (UMA), CONASAMI (SMG), publicados en DOF.
+ * Cada registro lleva su campo `source` con la publicación DOF de origen y año de vigencia.
  * Los valores marcados como esEstimacion:true son proyecciones y deben verificarse.
  *
  * NOTA LEGAL: Los valores de UMA y SMG son utilizados únicamente como referencia
  * para los cálculos. La resolución oficial corresponde al IMSS.
  */
-import type { UMARecord } from '../models';
+import type { UMARecord, SalaryZone } from '../models';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH } from './ley73';
+
+/**
+ * Tabla histórica UMA/SMG 2017–2026.
+ * Provenancia por registro: campo `source` de cada entrada.
+ * - UMA: publicación anual de INEGI en DOF (a más tardar el 10 de enero),
+ *   vigente desde el 1 de enero del año correspondiente (Ley para Determinar
+ *   el Valor de la UMA, DOF 27-ene-2016).
+ * - SMG (ZSMG/CDMX): resolución anual de CONASAMI, vigente desde el 1 de enero.
+ */
 
 export const TABLA_UMA_SMG: readonly UMARecord[] = [
   {
@@ -93,20 +103,26 @@ export const TABLA_UMA_SMG: readonly UMARecord[] = [
   },
   {
     year: 2026,
-    // Estimación basada en tendencia histórica (~4% de incremento).
-    // VERIFICAR en DOF correspondiente (enero 2026).
-    dailyUMA: 117.7,
-    monthlyUMA: 3578.28,
-    annualUMA: 42960.5,
+    dailyUMA: 117.31,
+    monthlyUMA: 3566.22,
+    annualUMA: 42818.15,
     smgCdmx: 315.04,
-    isEstimate: true,
+    // SMG de la Zona Libre de la Frontera Norte 2026.
+    smgFronteraNorte: 440.87,
+    isEstimate: false,
     source:
-      'UMA estimada — verificar publicación DOF enero 2026 (INEGI). ' +
-      'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx).',
+      'DOF 09-ene-2026 (INEGI) — valor diario corroborado en valoruma.com. ' +
+      'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx). ' +
+      'SMG Frontera Norte 2026: calculadora oficial del IMSS para Personas Trabajadoras ' +
+      'Independientes (calculadoraPTI-0326.js, marzo 2026); confirmar contra la tabla ' +
+      'de CONASAMI.',
   },
 ] as const;
 
-/** UMA vigente para el año actual (2026). Verificar con DOF. */
+/**
+ * UMA vigente por defecto — último registro de TABLA_UMA_SMG. Fuente y vigencia
+ * heredadas del campo `source` de ese registro.
+ */
 export const UMA_ACTUAL: UMARecord = TABLA_UMA_SMG[TABLA_UMA_SMG.length - 1]!;
 
 /** Obtiene el registro UMA/SMG para un año específico. */
@@ -120,8 +136,31 @@ export function getMostRecentUMA(): UMARecord {
 }
 
 /**
+ * Salario mínimo de la zona geográfica seleccionada, que la Modalidad 10 usa
+ * como piso del SBC declarado (Art. 28 LSS vigente: "el salario mínimo general
+ * del área geográfica respectiva").
+ *
+ * - `general` (resto del país): usa el SMG general (históricamente el de la
+ *   Zona A / CDMX que ya registra la tabla).
+ * - `frontera_norte`: usa el SMG de la Zona Libre de la Frontera Norte cuando
+ *   el registro lo trae; si no, cae al SMG general.
+ *
+ * Si la configuración no trae el SMG —simulaciones guardadas por versiones
+ * anteriores de la app— se usa el del registro UMA vigente.
+ */
+export function getMinimumDailySalary(
+  uma: { smgCdmx?: number; smgFronteraNorte?: number },
+  zone: SalaryZone = 'general',
+): number {
+  if (zone === 'frontera_norte' && uma.smgFronteraNorte != null) {
+    return uma.smgFronteraNorte;
+  }
+  return uma.smgCdmx ?? UMA_ACTUAL.smgCdmx;
+}
+
+/**
  * Calcula los valores de UMA mensual y anual a partir del valor diario.
- * Art. 9 de la Ley para Determinar el Valor de la UMA:
+ * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (DOF 27-ene-2016):
  * - Mensual = Diario × 30.4
  * - Anual = Diario × 365
  */

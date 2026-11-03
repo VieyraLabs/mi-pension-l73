@@ -3,10 +3,12 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Card, Text, TextInput, SegmentedButtons, HelperText } from 'react-native-paper';
+import { Card, Text, TextInput, HelperText } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 import type { PersonalData } from '../models';
 import { calculateAge } from '../utils/date';
+import { DateField } from './DateField';
+import { DEFAULT_BIRTH_DATE } from '../hooks/usePensionForm';
 
 export interface PersonalDataStepProps {
   personalData: PersonalData;
@@ -22,55 +24,26 @@ export function PersonalDataStep({ personalData, onChange, theme }: PersonalData
           Información personal
         </Text>
         <TextInput
-          label="Nombre (opcional)"
+          label="Nombre *"
           value={personalData.name ?? ''}
           onChangeText={(v) => onChange({ name: v })}
           mode="outlined"
           style={styles.input}
         />
-        <Text variant="labelMedium" style={{ marginBottom: 8, color: theme.colors.onSurfaceVariant }}>
-          Sexo *
-        </Text>
-        <SegmentedButtons
-          value={personalData.sex}
-          onValueChange={(v) => onChange({ sex: v as PersonalData['sex'] })}
-          buttons={[
-            { value: 'masculino', label: 'Masculino' },
-            { value: 'femenino', label: 'Femenino' },
-          ]}
-          style={{ marginBottom: 16 }}
-        />
-        <TextInput
-          label="Fecha de nacimiento (AAAA-MM-DD) *"
-          value={personalData.birthDate?.toISOString().split('T')[0] ?? ''}
-          onChangeText={(v) => {
-            const d = new Date(v + 'T00:00:00');
-            if (!isNaN(d.getTime())) onChange({ birthDate: d });
-          }}
-          mode="outlined"
-          keyboardType="numeric"
-          style={styles.input}
-          placeholder="1965-01-15"
+        {/* La fecha no se escribe a mano: se elige con el calendario
+            (DateField), igual que la fecha de retiro del paso 3. */}
+        <DateField
+          label="Fecha de nacimiento *"
+          value={personalData.birthDate}
+          fallbackDate={DEFAULT_BIRTH_DATE}
+          onConfirm={(fecha) => onChange({ birthDate: fecha })}
+          theme={theme}
         />
         {personalData.birthDate && (
           <HelperText type="info">
             Edad actual: {calculateAge(personalData.birthDate)} años
           </HelperText>
         )}
-        <TextInput
-          label="Edad de retiro (60–65 años) *"
-          value={String(personalData.retirementAge)}
-          onChangeText={(v) => {
-            const n = parseInt(v);
-            if (!isNaN(n)) onChange({ retirementAge: n });
-          }}
-          mode="outlined"
-          keyboardType="numeric"
-          style={styles.input}
-        />
-        <HelperText type="info">
-          60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).
-        </HelperText>
       </Card.Content>
     </Card>
   );

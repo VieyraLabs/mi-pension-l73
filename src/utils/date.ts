@@ -13,11 +13,39 @@ export function calculateAge(birthDate: Date, reference?: Date): number {
   return age;
 }
 
-/** Calcula la fecha estimada de retiro dado el año de nacimiento y la edad de retiro. */
+/**
+ * Calcula la fecha estimada de retiro dado el año de nacimiento y la edad de retiro.
+ *
+ * La edad puede traer fracción de medio año (60.5): en ese caso se suman los
+ * meses correspondientes a la fracción. Con edades enteras el resultado es el
+ * cumpleaños del año en que se cumple la edad.
+ */
 export function calculateRetirementDate(birthDate: Date, retirementAge: number): Date {
+  const years = Math.floor(retirementAge);
+  const months = Math.round((retirementAge - years) * 12);
+
   const date = new Date(birthDate);
-  date.setFullYear(date.getFullYear() + retirementAge);
+  date.setFullYear(date.getFullYear() + years);
+  if (months === 0) return date;
+
+  // La fracción de la edad se cuenta en meses (medio año = 6 meses). Si el día
+  // no existe en el mes destino, se usa el último día de ese mes.
+  const targetMonth = date.getMonth() + months;
+  const day = date.getDate();
+  const daysInTargetMonth = new Date(date.getFullYear(), targetMonth + 1, 0).getDate();
+  date.setMonth(targetMonth, Math.min(day, daysInTargetMonth));
   return date;
+}
+
+/**
+ * Edad LEGAL para el cálculo de la cuantía (Art. 171 LSS 1973).
+ * "Se aumentará un año a los cumplidos cuando la edad los exceda en seis meses."
+ * La interfaz presenta la edad en fracciones de medio año, así que el umbral
+ * operativo es la fracción de medio año o más.
+ */
+export function calculateLegalAge(ageInYears: number): number {
+  const years = Math.floor(ageInYears);
+  return ageInYears - years >= 0.5 ? years + 1 : years;
 }
 
 /** Obtiene el año actual. */

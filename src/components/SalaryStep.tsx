@@ -1,5 +1,6 @@
 /**
- * Paso 3 del formulario de nueva simulación: salario base de cotización (SBC).
+ * Paso 2 del formulario de nueva simulación: salario base de cotización (SBC).
+ * Se captura en el mismo paso que el historial laboral.
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
@@ -32,7 +33,7 @@ export function SalaryStep({
           Salario Base de Cotización (SBC)
         </Text>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>
-          Ingresa el promedio del SBC de tus últimas 250 semanas cotizadas (~4 años y 10 meses).
+          Ingresa el promedio del SBC de tus últimas 250 semanas cotizadas. Si tuviste huecos sin cotización, el promedio se calcula sobre las semanas que sí cotizaste.
         </Text>
         <SegmentedButtons
           value={monthlyMode ? 'mensual' : 'diario'}

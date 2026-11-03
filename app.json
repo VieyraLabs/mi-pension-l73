@@ -1,32 +1,30 @@
 {
   "expo": {
-    "name": "Mi Pension MX",
-    "slug": "mi-pension-mx",
+    "name": "Mi Pensión L73",
+    "slug": "mi-pension-l73",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./src/assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./src/assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1565C0"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vieyralabs.mipensionmx",
+      "bundleIdentifier": "com.vieyralabs.mipensionl73",
       "infoPlist": {
-        "CFBundleDisplayName": "Mi Pensión MX"
+        "CFBundleDisplayName": "Mi Pensión L73"
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#1565C0"
+        "backgroundColor": "#047857"
       },
-      "package": "com.vieyralabs.mipensionmx"
+      "package": "com.vieyralabs.mipensionl73"
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -40,6 +38,15 @@
       ],
       "expo-font",
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#047857",
+          "image": "./src/assets/splash.png",
+          "imageWidth": 240,
+          "resizeMode": "contain"
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {
@@ -48,6 +55,15 @@
         }
       ]
     ],
-    "scheme": "mipension"
+    "scheme": "mipension",
+    "extra": {
+      "eas": {
+        "projectId": "5fd386e2-77d0-4b5c-a26d-038482f804bd"
+      }
+    },
+    "owner": "alanvieyra333",
+    "updates": {
+      "url": "https://u.expo.dev/5fd386e2-77d0-4b5c-a26d-038482f804bd"
+    }
   }
 }

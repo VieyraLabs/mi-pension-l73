@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    Icono de "Mi Pensión L73" — marca "Amanecer".
+    Un sol ámbar que amanece sobre una escalera blanca ascendente: tu
+    cotización (cada peldaño = un incremento auditado) culmina en el sol de
+    tu pensión. El degradado esmeralda→teal es BRAND_GRADIENT.light
+    (#047857 → #0F766E) y el ámbar #FBBF24 es el acento del tema.
+
+    Derivados (generados desde este master por .devspace/state/tools/icon-gen):
+      - icon.png           → render 1:1 (RGBA), iOS/web.
+      - App-Icon-…@1x.png  → render 1:1 aplanado (RGB sin alfa), AppIcon de iOS.
+      - adaptive-icon.png  → primer plano transparente, glifo en la zona segura 66%.
+      - favicon.png        → 64×64.
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#047857"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="0.30" cy="0.18" r="1.0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.15"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="0.5" stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#00241E" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#sheen)"/>
+  <g filter="url(#shadow)" transform="translate(132 167) scale(1.746)">
+    <path d="M40 300 L120 300 L120 245 L200 245 L200 190 L300 190"
+          fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M205 190 A95 95 0 0 1 395 190 Z" fill="url(#sun)"/>
+  </g>
+</svg>

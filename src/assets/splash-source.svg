@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="600" viewBox="0 0 720 600">
+  <!--
+    Splash de "Mi Pensión L73" (logo transparente, 720×600 = 3× del tamaño
+    lógico 240×200pt). La escalera blanca + el sol ámbar sobre fondo
+    esmeralda #047857 (lo pinta el fondo del splash, no esta imagen), con el
+    nombre debajo. Se deriva a 1x/2x/3x y a src/assets/splash.png (Android).
+  -->
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="0.5" stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(-7.6 -83.8) scale(1.69)">
+    <path d="M40 300 L120 300 L120 245 L200 245 L200 190 L300 190"
+          fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M205 190 A95 95 0 0 1 395 190 Z" fill="url(#sun)"/>
+  </g>
+  <text x="360" y="540" font-family="Helvetica, Arial, sans-serif" font-size="66" font-weight="700"
+        letter-spacing="1" fill="#FFFFFF" text-anchor="middle">Mi Pensión L73</text>
+</svg>

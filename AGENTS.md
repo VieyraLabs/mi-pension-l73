@@ -84,11 +84,13 @@ se cambia **con la fuente legal a la vista**, no para que la suite pase.
 
 ## 6. Estilo
 
+- **Code in English.** El código se programa en inglés, sin excepciones: identificadores,
+  tipos, funciones, constantes, nombres de archivo y nombres de test van en inglés
+  (`averageSalary`, `contributionHistory`, `PensionInput`, `extractHeaderSbc`). No se
+  escriben nombres en español para el código, ni siquiera auxiliares o "temporales".
 - **Comments in Spanish**, matching the existing code. Los comentarios explican **por
   qué**, no **qué**: el código ya dice qué hace.
-- **Nombres de dominio en inglés** (`averageSalary`, `contributionHistory`,
-  `PensionInput`), **textos de cara al usuario en español**. Es la convención que ya usa
-  el repositorio.
+- **UI text in Spanish**, y la documentación de `docs/` también.
 - **Funciones puras donde se pueda.** Una regla de cálculo no sabe qué pantalla la invocó.
 - **Sin `any`** sin una razón que lo justifique en el comentario.
 

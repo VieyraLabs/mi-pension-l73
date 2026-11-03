@@ -1,72 +1,57 @@
 /**
  * Paso 1: Cálculo del salario promedio efectivo.
- * Incluye el ajuste por Modalidad 40 si está activa.
+ * Incluye los meses de Modalidad 10 si están activos.
  *
- * Fuente: Art. 167 LSS 1973 — promedio de las últimas 250 semanas.
+ * Fuente: Art. 167 LSS 1973 — promedio de las últimas 250 semanas cotizadas.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import {
-  AVERAGE_DAYS_PER_MONTH,
-  MODALIDAD_40_CAP_TIMES_UMA,
-  SBC_AVERAGE_WEEKS,
-  SBC_CAP_TIMES_UMA,
-  WEEKS_PER_MONTH,
-  WEEKS_PER_YEAR,
-} from '../../../constants/ley73';
+import { AVERAGE_DAYS_PER_MONTH, SBC_CAP_TIMES_UMA } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 /**
- * Calcula el salario promedio ajustado de las últimas 250 semanas,
- * considerando la Modalidad 40 si está activa.
+ * Calcula el salario promedio ajustado de las últimas 250 semanas cotizadas.
  *
- * Supuesto M40: cuando M40 está activa, calculamos el promedio ponderado
- * aproximado entre el SBC del régimen obligatorio y el SBC de M40,
- * según los meses esperados de cotización M40 dentro de las 250 semanas.
+ * Los meses de Modalidad 10 NO se ponderan aquí: ya entran al promedio como
+ * un tramo más de la línea temporal del SBC proyectado (Art. 167 LSS 1973).
+ * Este paso solo consume ese resultado y lo narra con las mismas cifras.
  */
 export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
   const { input } = ctx;
-  const { averageSalary, uma, modalidad40 } = input;
+  const { averageSalary, uma, modalidad10 } = input;
+  const salaryForCalculation = input.projectedAverageDailySalary ?? averageSalary.dailySalary;
   const warnings = [...ctx.warnings];
   const steps = [...ctx.steps];
 
   const dailyUMACap = SBC_CAP_TIMES_UMA * uma.dailyUMA;
-  let baseDailySalary = averageSalary.dailySalary;
-  let isSalaryEstimate = false;
-  let salaryDescription = `Salario diario promedio ingresado: $${baseDailySalary.toFixed(2)}`;
-  let salaryFormula = 'SBC promedio (250 semanas) — ingresado por el usuario';
+  let baseDailySalary = salaryForCalculation;
+  let isSalaryEstimate = input.projectedAverageDailySalary != null;
+  let salaryDescription = input.projectedAverageDailySalary == null
+    ? `Salario diario promedio ingresado: $${baseDailySalary.toFixed(2)}`
+    : `SBC promedio proyectado al retiro: $${baseDailySalary.toFixed(2)}/día`;
+  let salaryFormula = input.projectedAverageDailySalary == null
+    ? 'SBC promedio (250 semanas) — ingresado por el usuario'
+    : 'SBC promedio proyectado al retiro — historial + proyección';
 
-  // Ajuste por Modalidad 40
-  if (modalidad40.active && modalidad40.contributionSalary && modalidad40.expectedMonths) {
-    const sbcM40 = modalidad40.contributionSalary;
-    const sbcM40Topado = Math.min(sbcM40, MODALIDAD_40_CAP_TIMES_UMA * uma.dailyUMA);
+  const breakdown = input.projectedAverageBreakdown;
+  const m10Weeks = breakdown?.m10Weeks ?? 0;
 
-    // Semanas totales del período de referencia
-    const referenceWeeks = SBC_AVERAGE_WEEKS; // 250
-    // Semanas de M40 dentro del período de referencia
-    const m40Weeks = Math.min(modalidad40.expectedMonths * WEEKS_PER_MONTH, referenceWeeks);
-    const baseWeeks = referenceWeeks - m40Weeks;
-
-    // Incremento anual de M40 si aplica
-    let adjustedDailyM40Salary = sbcM40Topado;
-    if (modalidad40.annualSalaryIncrease && modalidad40.annualSalaryIncrease > 0) {
-      // Para simplificar, aplicamos el incremento promedio en la mitad del período
-      const m40Years = m40Weeks / WEEKS_PER_YEAR;
-      const increaseFactor = 1 + (modalidad40.annualSalaryIncrease / 100) * (m40Years / 2);
-      adjustedDailyM40Salary = Math.min(sbcM40Topado * increaseFactor, MODALIDAD_40_CAP_TIMES_UMA * uma.dailyUMA);
-      isSalaryEstimate = true;
-    }
-
-    // Promedio ponderado
-    const weightedAverage =
-      (baseDailySalary * baseWeeks + adjustedDailyM40Salary * m40Weeks) / referenceWeeks;
-
-    baseDailySalary = round2(weightedAverage);
-    salaryDescription = `Promedio ponderado: ${baseWeeks.toFixed(0)} sem. ordinarias ($${averageSalary.dailySalary.toFixed(2)}/día) + ${m40Weeks.toFixed(0)} sem. M40 ($${adjustedDailyM40Salary.toFixed(2)}/día) = $${baseDailySalary.toFixed(2)}/día`;
-    salaryFormula = '(SBC_ord × sem_ord + SBC_M40 × sem_M40) ÷ 250';
+  if (breakdown && m10Weeks > 0) {
+    baseDailySalary = round2(salaryForCalculation);
+    salaryDescription =
+      `Promedio ponderado: ${breakdown.ordinaryWeeks} sem. ordinarias ` +
+      `($${breakdown.ordinaryDailySalary.toFixed(2)}/día) + ${m10Weeks} sem. M10 ` +
+      `($${breakdown.m10DailySalary.toFixed(2)}/día) = $${baseDailySalary.toFixed(2)}/día`;
+    salaryFormula =
+      `(SBC_ord × sem_ord + SBC_M10 × sem_M10) ÷ ${breakdown.totalWeeks}`;
     isSalaryEstimate = true;
     warnings.push(
-      'El promedio salarial incluye un ajuste estimado por Modalidad 40. ' +
+      'El promedio salarial incluye los meses de Modalidad 10 cotizados al SBC declarado. ' +
         'El IMSS calculará el promedio exacto con tu historial completo.',
+    );
+  } else if (modalidad10.active) {
+    warnings.push(
+      'La Modalidad 10 está activa pero el SBC promedio proyectado no incluye sus meses. ' +
+        'Verifica los datos capturados en el paso 4.',
     );
   }
 
@@ -92,9 +77,13 @@ export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
     formula: capApplied ? `min(${salaryFormula}, 25 × UMA_diaria)` : salaryFormula,
     legalBasis: 'Art. 167 LSS 1973 (promedio 250 semanas); Art. 28 LSS vigente (tope 25 UMA)',
     isEstimate: isSalaryEstimate,
-    assumption: isSalaryEstimate
-      ? 'Promedio ponderado estimado considerando Modalidad 40. El IMSS usará el historial exacto.'
-      : undefined,
+    assumption:
+      m10Weeks > 0
+        ? 'El promedio incorpora los meses de Modalidad 10 al SBC declarado (Art. 227 LSS vigente) ' +
+          'y supone cotización continua hasta el retiro. El IMSS usará el historial exacto.'
+        : input.projectedAverageDailySalary != null
+          ? 'Se asume cotización continua hasta el retiro con el último SBC agregado del historial disponible.'
+          : undefined,
   });
 
   return {

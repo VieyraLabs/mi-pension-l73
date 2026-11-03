@@ -10,13 +10,15 @@ razonamiento ver [`docs/adr/`](docs/adr/).
 
 ## Qué es
 
-**Mi Pensión MX** es una aplicación móvil que estima la pensión de vejez bajo la
+**Mi Pensión L73** es una aplicación móvil que estima la pensión de vejez bajo la
 **Ley del Seguro Social de 1973** (Ley 73) en México. El usuario ingresa sus datos de
 cotización y obtiene una estimación con el desglose de cómo se calculó, paso a paso, con
 la referencia legal de cada paso.
 
 No está publicada en ninguna tienda. No hay cuentas, no hay backend y no hay servicios de
-terceros que reporten datos del usuario.
+terceros que reporten datos del usuario. El único tercero con el que habla la app es el
+servicio de actualizaciones de Expo, que recibe el identificador de instalación, la versión
+y la plataforma, y nada más ([ADR-0017](docs/adr/0017-el-tag-produce-los-instalables-del-release.md)).
 
 ## Por qué existe
 
@@ -52,12 +54,11 @@ Ese contexto explica dos decisiones que de otro modo parecen arbitrarias:
 ```
 App.tsx                     Raíz de la app
 ├── navigation/
-│   └── RootNavigator.tsx    Stack raíz + Bottom Tabs (9 pantallas)
+│   └── RootNavigator.tsx    Stack raíz + Bottom Tabs (8 pantallas)
 ├── screens/                 Una por función
 │   ├── DashboardScreen      Panel
 │   ├── NewSimulationScreen  Captura por pasos
 │   ├── ResultScreen         Resultado + desglose
-│   ├── SimulatorScreen      Comparación de escenarios A/B
 │   ├── HistoryScreen        Simulaciones guardadas
 │   ├── PdfImportScreen      Importación de la constancia
 │   ├── ValidationScreen     Revisión de lo importado
@@ -75,7 +76,7 @@ App.tsx                     Raíz de la app
 ├── constants/               Valores normativos, con su fuente
 ├── storage/                 Persistencia local (AsyncStorage)
 ├── theme/                   Tema Material Design 3
-└── utils/                   Formato, fechas, Modalidad 40
+└── utils/                   Formato, fechas, Modalidad 10
 ```
 
 ## Stack
@@ -90,18 +91,34 @@ App.tsx                     Raíz de la app
 | PDF (entrada) | pdfjs-dist | Extracción local, sin subir el documento ([ADR-0003](docs/adr/0003-extraccion-local-de-pdf-con-pdfjs-dist.md)) |
 | PDF (salida) | expo-print + expo-sharing | Generación y envío por el sistema operativo |
 | Persistencia | AsyncStorage | Volumen pequeño, sin dependencia nativa |
-| Pruebas | Jest + jest-expo + Testing Library | 116 pruebas, 12 suites |
+| Pruebas | Jest + jest-expo + Testing Library | 252 pruebas, 17 suites |
 
 ## Estado del proyecto
 
-- **44 commits** de historia real, con mensajes convencionales.
-- **12 suites de pruebas, 116 casos, todos en verde.**
+- **La captura son cuatro pasos** («Datos personales», «Historial laboral», «Edad de
+  retiro», «UMA»): la edad de retiro salió de los datos personales porque es una decisión
+  sobre cuándo se jubila la persona, no un dato que la describes. La edad de retiro se
+  elige **por fecha** (calendario de ruedas) y la edad se deriva de esa fecha, con
+  granularidad de medio año entre 60 y 65 años: es lo que permite al motor aplicar la
+  regla del Art. 171 LSS 1973 («Se aumentará un año a los cumplidos cuando la edad los
+  exceda en seis meses»), que decide el tipo de pensión y el factor de reducción.
+- **57 commits** de historia real, con mensajes convencionales.
+- **17 suites de pruebas, 252 casos, todos en verde.**
 - **Cobertura**: 89.1 % de sentencias, 96.1 % de funciones, 91.7 % de líneas, medida
   sobre `src/services/**`, `src/hooks/**` y `src/storage/**`.
-- **10 ADRs, 9 specs, 6 runbooks** en `docs/`.
+- **12 ADRs, 8 specs, 8 runbooks** en `docs/`.
+- **Deuda técnica del motor documentada** en [`docs/deuda-tecnica.md`](docs/deuda-tecnica.md):
+  los huecos conocidos entre lo que calcula la app y lo que resuelve el IMSS (techo del
+  100 % del salario promedio, fracción de los incrementos anuales, supuestos de la
+  proyección de semanas, la convergencia del promedio con horizontes largos de Modalidad 10 y el porcentaje del
+  Art. 171 aplicado sobre la cuantía básica en vez de sobre la vejez). No es trabajo
+  pendiente de la iteración: es el inventario de lo que la app **no** hace, publicado para
+  que quien compare su resultado con la respuesta oficial sepa dónde puede haber
+  diferencia.
 - **5 workflows de CI**: tipos y lint, pruebas fragmentadas en tres shards, cobertura,
-  empaquetado web, CodeQL, release por etiqueta, deploy a staging y **puerta de
-  promoción** que exige aprobación humana antes de autorizar un release a producción.
+  empaquetado web, CodeQL, release por etiqueta (que compila los instalables de Android e
+  iOS y los adjunta al release), deploy a staging y **puerta de promoción** que exige
+  aprobación humana antes de autorizar un release a producción.
 
 ## Lo que este proyecto no es
 

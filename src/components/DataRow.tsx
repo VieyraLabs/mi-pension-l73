@@ -11,14 +11,15 @@ export interface DataRowProps {
   value: string;
   theme: MD3Theme;
   highlight?: boolean;
+  prominent?: boolean;
 }
 
-export function DataRow({ label, value, theme, highlight }: DataRowProps) {
+export function DataRow({ label, value, theme, highlight, prominent }: DataRowProps) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
       <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{label}</Text>
       <Text
-        variant="bodySmall"
+        variant={prominent ? 'titleMedium' : 'bodySmall'}
         style={{
           color: highlight ? theme.colors.primary : theme.colors.onSurface,
           fontWeight: highlight ? 'bold' : 'normal',

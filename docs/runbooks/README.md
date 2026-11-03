@@ -14,6 +14,8 @@ problema delante.
 | [04](04-diagnosticar-un-fallo-de-importacion-de-pdf.md) | Diagnosticar un fallo de importación de PDF | Cuando la importación no extrae datos |
 | [05](05-actualizar-uma-y-constantes-legales.md) | Actualizar UMA y constantes legales | Cuando sale una nueva UMA |
 | [06](06-revision-previa-a-una-publicacion.md) | Revisión previa a una publicación | Antes de abrir la puerta de promoción |
+| [07](07-verificar-el-toolchain.md) | Verificar el toolchain | Cuando algo falla por el entorno |
+| [08](08-auditar-el-contraste-de-la-interfaz.md) | Auditar el contraste de la interfaz | Al cambiar un color del tema o una superficie |
 
 ## Formato
 

@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, List, useTheme, Divider } from 'react-native-paper';
 import { FAQ_ITEMS } from '../constants/infoLegal';
 import { MessageBanner } from '../components/MessageBanner';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 export default function FAQScreen() {
   const theme = useTheme();
@@ -16,16 +17,10 @@ export default function FAQScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
     >
-      <Card style={[styles.headerCard, { backgroundColor: theme.colors.primary }]} elevation={3}>
-        <Card.Content style={{ alignItems: 'center', padding: 20 }}>
-          <Text variant="headlineSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', textAlign: 'center' }}>
-            ❓ Preguntas Frecuentes
-          </Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.onPrimary, opacity: 0.9, textAlign: 'center', marginTop: 8 }}>
-            Respuestas a las preguntas más comunes sobre pensiones IMSS Ley 73
-          </Text>
-        </Card.Content>
-      </Card>
+      <ScreenHeader
+        title="Preguntas Frecuentes"
+        subtitle="Respuestas a las preguntas más comunes sobre pensiones IMSS Ley 73"
+      />
 
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
         <Card.Content>
@@ -69,6 +64,5 @@ export default function FAQScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  headerCard: { borderRadius: 16, marginBottom: 16 },
-  card: { borderRadius: 12, marginBottom: 16 },
+  card: { borderRadius: 16, marginBottom: 16 },
 });

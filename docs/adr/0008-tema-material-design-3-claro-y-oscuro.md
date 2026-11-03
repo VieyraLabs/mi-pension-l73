@@ -1,6 +1,7 @@
 # ADR-0008 — Tema Material Design 3 con modo claro y oscuro
 
-- **Estado**: Aceptada
+- **Estado**: Aceptada (la paleta de colores fue sustituida por [ADR-0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md);
+  el resto de esta decisión —MD3, modo claro/oscuro, `BANNER_COLORS`, cero hex en pantallas— sigue vigente)
 - **Fecha**: 2026-08-01
 - **Ámbito**: `src/theme/`
 
@@ -16,6 +17,12 @@ quedar ilegible. La app ya pasó por ese bug: el commit `9e996ac` replaces los c
 hardcodeados por colores sensibles al tema.
 
 ## Decisión
+
+## Paleta
+
+> La paleta original (azul Material `#1565C0` + naranja `#FF6F00`) fue sustituida por la
+> paleta esmeralda de [ADR-0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md).
+> El resto de esta decisión no cambia.
 
 **React Native Paper con los temas Material Design 3 (`MD3LightTheme` y `MD3DarkTheme`),
 y una paleta propia declarada en un solo lugar.**

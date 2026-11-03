@@ -1,11 +1,13 @@
 /**
- * Paso 6 del formulario de nueva simulación: beneficiarios.
+ * Paso 3 del formulario de nueva simulación: beneficiarios.
+ * Comparte paso con la edad de retiro.
  */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, TextInput, Switch, Divider } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 import type { Beneficiaries } from '../models';
+import { IconText } from './IconText';
 
 export interface BeneficiariesStepProps {
   beneficiaries: Beneficiaries;
@@ -66,13 +68,13 @@ export function BeneficiariesStep({ beneficiaries, onChange, theme }: Beneficiar
         </View>
 
         <Divider style={{ marginVertical: 12 }} />
-        <Text variant="bodySmall" style={{ color: theme.colors.primary }}>
+        <IconText icon="check-circle" color={theme.colors.primary}>
           {!beneficiaries.hasSpouse && !beneficiaries.hasMinorChildren
-            ? '✓ Se aplicará ayuda asistencial del 15% (sin beneficiarios)'
+            ? 'Se aplicará ayuda asistencial del 15% (sin beneficiarios)'
             : beneficiaries.hasSpouse && !beneficiaries.hasMinorChildren
-              ? '✓ Se aplicará ayuda asistencial del 10% (cónyuge sin hijos)'
-              : '✓ Asignaciones familiares activas'}
-        </Text>
+              ? 'Se aplicará ayuda asistencial del 10% (cónyuge sin hijos)'
+              : 'Asignaciones familiares activas'}
+        </IconText>
       </Card.Content>
     </Card>
   );

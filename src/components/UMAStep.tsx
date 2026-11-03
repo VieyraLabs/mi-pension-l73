@@ -1,5 +1,6 @@
 /**
  * Paso 4 del formulario de nueva simulación: UMA (Unidad de Medida y Actualización).
+ * Comparte paso con la Modalidad 40.
  */
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
@@ -67,9 +68,10 @@ export function UMAStep({ uma, onSelectYear, onCustomize, isCustom, setIsCustom,
                     key={r.year}
                     selected={uma.year === r.year}
                     onPress={() => onSelectYear(r.year)}
+                    icon={r.isEstimate ? 'alert' : undefined}
                     style={{ marginBottom: 4 }}
                   >
-                    {r.year}{r.isEstimate ? ' ⚠️' : ''}
+                    {r.year}
                   </Chip>
                 ))}
               </View>

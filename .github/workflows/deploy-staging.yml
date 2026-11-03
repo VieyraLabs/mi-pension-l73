@@ -57,6 +57,35 @@ jobs:
             exit 1
           fi
 
+      # Una actualización OTA sólo llega a la app si el binario la tiene
+      # activada. Como `ios/` está versionado y EAS no ejecuta prebuild, el
+      # proyecto nativo commiteado es el que manda.
+      - name: 'Verificar que el proyecto nativo tiene las actualizaciones activadas'
+        run: |
+          set -euo pipefail
+          PLIST="ios/MiPensionL73/Supporting/Expo.plist"
+          if [ ! -f "${PLIST}" ]; then
+            echo "::error::No existe ${PLIST}. Regenera el proyecto nativo con 'npx expo prebuild --platform ios'."
+            exit 1
+          fi
+          read_native() {
+            python3 -c "import plistlib,sys;print(plistlib.load(open(sys.argv[1],'rb')).get(sys.argv[2],''))" "${PLIST}" "$1"
+          }
+          EXPECTED_URL=$(jq -r '.expo.updates.url // empty' app.json)
+          NATIVE_URL=$(read_native 'EXUpdatesURL')
+          NATIVE_ENABLED=$(read_native 'EXUpdatesEnabled')
+          if [ "${NATIVE_ENABLED}" != "True" ]; then
+            echo "::error::El proyecto nativo tiene EXUpdatesEnabled=${NATIVE_ENABLED}. La actualización OTA no llegaría a la app."
+            echo "::error::Ejecuta 'npx expo prebuild --platform ios' después de configurar expo.updates.url en app.json."
+            exit 1
+          fi
+          if [ "${NATIVE_URL}" != "${EXPECTED_URL}" ]; then
+            echo "::error::El proyecto nativo apunta a '${NATIVE_URL}' y app.json a '${EXPECTED_URL}'."
+            echo "::error::Ejecuta 'npx expo prebuild --platform ios' y commitea el resultado."
+            exit 1
+          fi
+          echo "Proyecto nativo al día: actualizaciones hacia ${NATIVE_URL}"
+
       - name: Build de preview (iOS y Android)
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}

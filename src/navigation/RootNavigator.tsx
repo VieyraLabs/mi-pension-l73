@@ -12,12 +12,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DashboardScreen from '../screens/DashboardScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
 import ResultScreen from '../screens/ResultScreen';
-import SimulatorScreen from '../screens/SimulatorScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import InfoScreen from '../screens/InfoScreen';
 import FAQScreen from '../screens/FAQScreen';
 import PdfImportScreen from '../screens/PdfImportScreen';
 import ValidationScreen from '../screens/ValidationScreen';
+import ComparisonScreen from '../screens/ComparisonScreen';
+import MultiComparisonScreen from '../screens/MultiComparisonScreen';
 import type { ImportedSimulationData } from '../models';
 
 // ─────────────────────────────────────────────
@@ -28,6 +29,8 @@ export type RootStackParamList = {
   MainTabs: undefined;
   NewSimulation: { importedData?: ImportedSimulationData } | undefined;
   Result: { simulationId?: string };
+  Comparison: { simulationId?: string };
+  MultiComparison: { simulationIds: string[] };
   PdfImport: undefined;
   Validation: { extractedText: string };
   FAQ: undefined;
@@ -35,7 +38,6 @@ export type RootStackParamList = {
 
 export type TabParamList = {
   Dashboard: undefined;
-  Simulator: undefined;
   History: undefined;
   Info: undefined;
 };
@@ -50,11 +52,17 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
+        tabBarActiveTintColor: theme.colors.onPrimaryContainer,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+        tabBarActiveBackgroundColor: theme.colors.primaryContainer,
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarItemStyle: { borderRadius: 16, marginVertical: 6 },
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outline,
+          borderTopColor: theme.colors.outlineVariant,
+          height: 64,
+          paddingTop: 6,
+          paddingBottom: 6,
         },
       }}
     >
@@ -65,16 +73,6 @@ function MainTabs() {
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Simulator"
-        component={SimulatorScreen}
-        options={{
-          title: 'Simular',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calculator" color={color} size={size} />
           ),
         }}
       />
@@ -108,9 +106,10 @@ export default function RootNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: { backgroundColor: theme.colors.primary },
-        headerTintColor: '#FFFFFF',
+        headerStyle: { backgroundColor: theme.colors.background },
+        headerTintColor: theme.colors.onSurface,
         headerTitleStyle: { fontWeight: 'bold' },
+        headerShadowVisible: false,
         contentStyle: { backgroundColor: theme.colors.background },
       }}
     >
@@ -128,6 +127,16 @@ export default function RootNavigator() {
         name="Result"
         component={ResultScreen}
         options={{ title: 'Resultado de Pensión' }}
+      />
+      <Stack.Screen
+        name="Comparison"
+        component={ComparisonScreen}
+        options={{ title: 'Comparativa M10 vs Pensionarse Antes' }}
+      />
+      <Stack.Screen
+        name="MultiComparison"
+        component={MultiComparisonScreen}
+        options={{ title: 'Comparar simulaciones' }}
       />
       <Stack.Screen
         name="PdfImport"

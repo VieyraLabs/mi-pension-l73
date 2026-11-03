@@ -7,8 +7,10 @@ import { Text, Card, List, useTheme, Divider, Button } from 'react-native-paper'
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { BUTTON_RADIUS } from '../theme';
 import { INFO_LEY73 } from '../constants/infoLegal';
 import { MessageBanner } from '../components/MessageBanner';
+import { ScreenHeader } from '../components/ScreenHeader';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -22,16 +24,10 @@ export default function InfoScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
     >
-      <Card style={[styles.headerCard, { backgroundColor: theme.colors.primary }]} elevation={3}>
-        <Card.Content style={{ alignItems: 'center', padding: 20 }}>
-          <Text variant="headlineSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', textAlign: 'center' }}>
-            📚 Información Ley 73
-          </Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.onPrimary, opacity: 0.9, textAlign: 'center', marginTop: 8 }}>
-            Todo lo que necesitas saber sobre la Ley del Seguro Social de 1973
-          </Text>
-        </Card.Content>
-      </Card>
+      <ScreenHeader
+        title="Información Ley 73"
+        subtitle="Todo lo que necesitas saber sobre la Ley del Seguro Social de 1973"
+      />
 
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
         <Card.Content>
@@ -70,7 +66,7 @@ export default function InfoScreen() {
       </MessageBanner>
 
       {/* Botón FAQ */}
-      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>
+      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
         <Card.Content>
           <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginBottom: 4 }}>
             ¿Tienes más preguntas?
@@ -78,7 +74,7 @@ export default function InfoScreen() {
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 12 }}>
             Consulta las Preguntas Frecuentes en la sección FAQ.
           </Text>
-          <Button mode="outlined" onPress={() => navigation.navigate('FAQ')}>
+          <Button mode="contained" onPress={() => navigation.navigate('FAQ')} style={{ borderRadius: BUTTON_RADIUS }} icon="help-circle">
             Ver Preguntas Frecuentes
           </Button>
         </Card.Content>
@@ -90,6 +86,5 @@ export default function InfoScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  headerCard: { borderRadius: 16, marginBottom: 16 },
-  card: { borderRadius: 12, marginBottom: 16 },
+  card: { borderRadius: 16, marginBottom: 16 },
 });

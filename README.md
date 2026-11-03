@@ -1,12 +1,12 @@
-# Mi Pensión MX — Calculadora de pensión IMSS (Ley 73)
+# Mi Pensión L73 — Calculadora de pensión IMSS (Ley 73)
 
 > **English summary below.** App móvil que estima la pensión de vejez bajo la **Ley del
 > Seguro Social de 1973** en México. **React Native + Expo + TypeScript**, **sin backend**
 > y **sin telemetría**: todo el cálculo y todos los datos del usuario viven en el
 > dispositivo. La diferencia del producto no es el formulario: es que **el resultado es
 > auditable** — cada número viene con su fórmula, su fundamento legal y la marca de si
-> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **116 pruebas**
-> en 12 suites, **5 workflows de CI** con puerta de promoción.
+> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **459 pruebas**
+> en 36 suites, **5 workflows de CI** con puerta de promoción.
 
 Aplicación móvil desarrollada con **React Native 0.86 + Expo SDK 57 + TypeScript** para
 estimar pensiones bajo la **Ley del Seguro Social de 1973 (Ley 73)**.
@@ -42,14 +42,14 @@ take to a government office, so it has to be explainable.
   over the last **250 *contributed* weeks** (not 250 calendar weeks).
 - **One source of truth for validation.** A Zod schema drives both the forms and the
   calculation engine, with the legal article cited in the error message.
-- **116 tests across 12 suites**, 89.1 % statement / 96.1 % function coverage on the
+- **459 tests across 36 suites**, 89.6 % statement / 96.2 % function coverage on the
   decision-making code.
 - **5 CI workflows**, including a promotion gate that requires human approval before a
   release is authorized.
 
-**Docs:** [`docs/adr/`](docs/adr/) (10 architecture decision records),
-[`docs/spec/`](docs/spec/) (9 behavioural specs),
-[`docs/runbooks/`](docs/runbooks/) (6 operational procedures), plus
+**Docs:** [`docs/adr/`](docs/adr/) (17 architecture decision records),
+[`docs/spec/`](docs/spec/) (10 behavioural specs),
+[`docs/runbooks/`](docs/runbooks/) (7 operational procedures), plus
 [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
 
 ---
@@ -65,15 +65,14 @@ take to a government office, so it has to be explainable.
   - Ayuda asistencial (Art. 165)
   - Pensión Mínima Garantizada (Art. 170)
   - Tope de 25 UMA (Art. 28 LSS vigente)
-  - Ajuste por Modalidad 40 (Art. 218 Reglamento LSS)
+  - Ajuste por Modalidad 10 (incorporación voluntaria, Arts. 222 a 233 LSS vigente)
 - **Desglose auditable**: cada paso del cálculo muestra su fórmula, su referencia legal
   y si el valor es exacto o estimado
-- **Simulador de escenarios A vs B** con comparación detallada
 - **Historial** de las últimas 20 simulaciones (AsyncStorage)
 - **Importación de la Constancia de cotizaciones en PDF** con extracción local de datos
 - **Exportación a PDF** del reporte completo, con el desglose
 - **Modo claro y oscuro** (Material Design 3)
-- **Sección educativa** sobre Ley 73, UMA, Modalidad 40 y FAQ
+- **Sección educativa** sobre Ley 73, UMA, Modalidad 10 y FAQ
 
 ---
 
@@ -96,7 +95,7 @@ src/
 ├── theme/           # MD3 claro/oscuro
 ├── validation/      # Schemas Zod (fuente única de verdad)
 ├── storage/         # AsyncStorage (últimas 20 simulaciones)
-└── utils/           # format.ts (Intl), date.ts, modalidad40.ts
+└── utils/           # format.ts (Intl), date.ts, modalidad10.ts
 ```
 
 ### El motor de cálculo es un pipeline de funciones puras
@@ -124,8 +123,8 @@ Cada paso:
 
 | Carpeta | Qué contiene | Cantidad |
 |---|---|---|
-| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura: **por qué** el código es así | 10 ADR |
-| [`docs/spec/`](docs/spec/) | Comportamiento observable: **qué** hace el sistema | 9 specs |
+| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura: **por qué** el código es así | 17 ADR |
+| [`docs/spec/`](docs/spec/) | Comportamiento observable: **qué** hace el sistema | 10 specs |
 | [`docs/runbooks/`](docs/runbooks/) | Procedimientos: **cómo** se hace cada tarea repetida | 6 runbooks |
 | [`AGENTS.md`](AGENTS.md) | Contrato de trabajo para agentes de código | — |
 | [`CONTEXT.md`](CONTEXT.md) | Contexto del proyecto y del dominio | — |
@@ -135,7 +134,7 @@ Cada paso:
 ## 🧪 Pruebas
 
 ```bash
-npm run test:run       # 12 suites, 116 casos
+npm run test:run       # 36 suites, 459 casos
 npm run test:coverage  # con reporte de cobertura
 npm run typecheck
 npm run lint
@@ -146,10 +145,10 @@ código que decide, no las pantallas):
 
 | Métrica | Valor |
 |---|---|
-| Sentimientos | 89.1 % |
-| Ramas | 83.3 % |
-| Funciones | 96.1 % |
-| Líneas | 91.7 % |
+| Statements | 89.6 % |
+| Ramas | 84.3 % |
+| Funciones | 96.2 % |
+| Líneas | 92.0 % |
 
 La cobertura **no** se mide sobre las pantallas: un snapshot que se actualiza a ciega no
 prueba nada. La cobertura de una pantalla es un indicador pobre; la del motor no.
@@ -157,7 +156,7 @@ prueba nada. La cobertura de una pantalla es un indicador pobre; la del motor no
 Escenarios cubiertos: validación de entrada (semanas < 500, edad < 60, salario 0),
 pensión de vejez, cesantía en edad avanzada, incrementos anuales, asignaciones
 familiares, ayuda asistencial, tope de 25 UMA, pensión mínima garantizada, desglose de
-pasos, simulador de escenarios, promedio del SBC sobre 250 semanas cotizadas, empleos
+pasos, promedio del SBC sobre 250 semanas cotizadas, empleos
 simultáneos, cambios de salario a mitad de semana, importación de PDF, parsing de la
 constancia, exportación a PDF y persistencia del historial.
 
@@ -169,7 +168,7 @@ constancia, exportación a PDF y persistencia del historial.
 |---|---|
 | [`ci.yml`](.github/workflows/ci.yml) | Tipos, lint, pruebas fragmentadas en 3 shards, cobertura y empaquetado web |
 | [`codeql.yml`](.github/workflows/codeql.yml) | Análisis de seguridad de CodeQL |
-| [`release.yml`](.github/workflows/release.yml) | Publica un release de GitHub por etiqueta, si CI está en verde |
+| [`release.yml`](.github/workflows/release.yml) | Compila Android e iOS en EAS por etiqueta y publica el release con los instalables adjuntos |
 | [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) | Build de preview y actualización OTA al canal `staging` |
 | [`promotion-gate.yml`](.github/workflows/promotion-gate.yml) | Verifica CI y staging, y **exige aprobación humana** antes de autorizar un release a producción |
 
@@ -177,8 +176,12 @@ Las acciones están fijadas por SHA de commit, no por etiqueta: una etiqueta pue
 re-apuntar, un commit no.
 
 La puerta de promoción produce el artefacto `AUTORIZACION.md` con el commit
-autorizado y el aprobador. **La publicación en producción es un procedimiento manual**
-(runbook 01), porque hoy no hay un proyecto de EAS vinculado ni publicación en tiendas.
+autorizado y el aprobador. **El tag `v*` es lo que autoriza la publicación**: el
+workflow `release.yml` compila Android e iOS en la nube de EAS y adjunta los
+instalables al release de GitHub. El APK es instalable en cualquier Android; el IPA es
+de distribución *ad hoc* y sólo instala en los dispositivos registrados en el perfil de
+aprovisionamiento. La configuración de una sola vez (proyecto de EAS vinculado,
+`EXPO_TOKEN`, credenciales de Apple) está en el runbook 01.
 
 ---
 
@@ -190,9 +193,12 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 - **Sin base de datos remota**: sin persistencia en servidores
 - El historial de simulaciones se guarda únicamente en `AsyncStorage` local
 - La importación de PDFs se procesa 100 % localmente
+- El canal de actualizaciones de Expo recibe sólo el identificador de instalación, la
+  versión y la plataforma: ningún dato del usuario
 
-> Ver [ADR-0002](docs/adr/0002-cero-backend-todo-en-el-dispositivo.md) y
-> [ADR-0009](docs/adr/0009-cero-telemetria-y-cero-servicios-de-terceros.md).
+> Ver [ADR-0002](docs/adr/0002-cero-backend-todo-en-el-dispositivo.md),
+> [ADR-0009](docs/adr/0009-cero-telemetria-y-cero-servicios-de-terceros.md) y
+> [ADR-0017](docs/adr/0017-el-tag-produce-los-instalables-del-release.md).
 
 ---
 
@@ -208,11 +214,18 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 | Art. 170 LSS 1973 | Pensión Mínima Garantizada |
 | Art. 182 LSS 1973 | Conservación de derechos |
 | Art. 28 LSS vigente | Tope de 25 UMA del SBC |
-| Art. 218 RIR-IMSS | Modalidad 40 |
+| Arts. 222 a 233 LSS vigente | Modalidad 10 (incorporación voluntaria) |
+| Art. 39 LSS 1973 / Art. 33 LSS vigente | Suma de los salarios concurrentes para el goce de prestaciones |
 
 > **Nota sobre la tabla del Art. 167**: los porcentajes de cuantía básica e incrementos
 > anuales son de referencia bibliográfica. El IMSS puede aplicar criterios operativos
 > distintos. Los resultados siempre se marcan como ESTIMACIONES.
+
+> **Nota sobre la cuota de la Modalidad 10**: se calcula con la estructura de financiamiento
+> oficial del IMSS —Cuadro A.3 del Anexo A al Informe al Consejo Técnico 2025-2026 y la
+> calculadora oficial para Personas Trabajadoras Independientes—, sin la aportación a
+> INFONAVIT. La clase de riesgo sale del catálogo oficial de ocupaciones del IMSS; lo que
+> depende de la persona es elegir el grupo que corresponde a su actividad real.
 
 ---
 
@@ -225,11 +238,16 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 - Expo CLI: `npm install -g expo-cli`
 - Expo Go en el dispositivo (iOS/Android), o un development build
 
+**Toolchain esperada:** Expo SDK 57 · React Native 0.86.x · TypeScript ~6.0.3 ·
+Hermes (motor JS) · CocoaPods con `ios/Podfile.lock` versionado · deployment
+target iOS 16.4 · Xcode 16+ para builds locales. Detalle y procedimiento de
+auditoría: [runbook-07](docs/runbooks/07-verificar-el-toolchain.md).
+
 ### Instalación
 
 ```bash
-git clone https://github.com/VieyraLabs/mi-pension-mx.git
-cd mi-pension-mx
+git clone https://github.com/VieyraLabs/mi-pension-l73.git
+cd mi-pension-l73
 npm install
 npm start
 ```
@@ -276,7 +294,7 @@ npm run lint           # ESLint
   ingresos, ni pagos en producción.
 - No hay backend, ni cuentas, ni telemetría.
 - No hay OCR: un PDF escaneado requiere captura manual, y la app lo dice.
-- La Modalidad 40 se estima con un promedio ponderado, no con el historial exacto.
+- La Modalidad 10 se estima con el historial proyectado, no con el historial exacto.
 
 ---
 

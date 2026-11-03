@@ -4,25 +4,63 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Etiqueta a publicar (por ejemplo, v1.2.0)'
+        required: true
+        type: string
+      refresh_provisioning:
+        description: 'Refrescar el perfil ad hoc de iOS (tras registrar un dispositivo nuevo)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
+# Una etiqueta identifica una versión: dos ejecuciones sobre la misma etiqueta
+# no deben publicar dos veces. `cancel-in-progress` es falso a propósito: si se
+# re-pushea una etiqueta, la segunda corrida espera a la primera en vez de
+# dejarla a medias.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release:
-    name: Publicar el release
+  verificar:
+    name: 'Verificar los prerrequisitos'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.ref.outputs.tag }}
+      sha: ${{ steps.ref.outputs.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
 
-      - name: Verificar que CI está en verde en este commit
+      # En un push de etiqueta la etiqueta es la propia referencia; en una
+      # ejecución manual viene del input. Se resuelve una sola vez para que
+      # todos los jobs siguientes compilen exactamente el mismo commit.
+      - name: Resolver la etiqueta
+        id: ref
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.sha }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          TAG="${INPUT_TAG:-${GITHUB_REF_NAME}}"
+          SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${TAG}" --jq '.sha')
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "Etiqueta a publicar: ${TAG} (${SHA})"
+
+      - name: 'Verificar que CI está en verde en este commit'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.ref.outputs.sha }}
         run: |
           set -euo pipefail
           count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}&status=completed" \
@@ -33,17 +71,177 @@ jobs:
           fi
           echo "CI en verde para ${SHA}"
 
-      - name: Generar el changelog
+      - name: 'Verificar que hay credencial de EAS'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           set -euo pipefail
-          PREV=$(git describe --tags --abbrev=0 "${GITHUB_REF}"^ 2>/dev/null || echo "")
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "::error::Falta el secreto EXPO_TOKEN en Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      # El proyecto de EAS se vincula una vez con `eas init`, que escribe
+      # `extra.eas.projectId` en app.json, y `eas update:configure` escribe
+      # `updates.url`. Sin ambos, el build falla con un error poco descriptivo.
+      - name: 'Verificar que el proyecto está vinculado a EAS'
+        run: |
+          set -euo pipefail
+          PROJECT_ID=$(jq -r '.expo.extra.eas.projectId // empty' app.json)
+          if [ -z "${PROJECT_ID}" ]; then
+            echo "::error::app.json no tiene extra.eas.projectId. Ejecuta 'npx eas-cli init' una vez y committea el resultado."
+            exit 1
+          fi
+          UPDATES_URL=$(jq -r '.expo.updates.url // empty' app.json)
+          if [ -z "${UPDATES_URL}" ]; then
+            echo "::error::app.json no tiene expo.updates.url. Ejecuta 'npx eas-cli update:configure' una vez y committea el resultado."
+            exit 1
+          fi
+          EXPECTED_URL="https://u.expo.dev/${PROJECT_ID}"
+          if [ "${UPDATES_URL}" != "${EXPECTED_URL}" ]; then
+            echo "::error::expo.updates.url es '${UPDATES_URL}' y debería ser '${EXPECTED_URL}'."
+            exit 1
+          fi
+          echo "Proyecto de EAS: ${PROJECT_ID}"
+
+      # El directorio `ios/` está versionado, así que EAS no ejecuta prebuild:
+      # usa el proyecto nativo commiteado tal cual. Si `app.json` y ese
+      # proyecto no coinciden, las actualizaciones quedan desactivadas en el
+      # binario y el error sólo se ve en runtime. Aquí se corta el problema.
+      - name: 'Verificar que el proyecto nativo está al día'
+        run: |
+          set -euo pipefail
+          PLIST="ios/MiPensionL73/Supporting/Expo.plist"
+          if [ ! -f "${PLIST}" ]; then
+            echo "::error::No existe ${PLIST}. Regenera el proyecto nativo con 'npx expo prebuild --platform ios'."
+            exit 1
+          fi
+          read_native() {
+            python3 -c "import plistlib,sys;print(plistlib.load(open(sys.argv[1],'rb')).get(sys.argv[2],''))" "${PLIST}" "$1"
+          }
+          EXPECTED_URL=$(jq -r '.expo.updates.url // empty' app.json)
+          NATIVE_URL=$(read_native 'EXUpdatesURL')
+          NATIVE_ENABLED=$(read_native 'EXUpdatesEnabled')
+          if [ "${NATIVE_ENABLED}" != "True" ]; then
+            echo "::error::El proyecto nativo tiene EXUpdatesEnabled=${NATIVE_ENABLED}. Las actualizaciones están desactivadas en el binario."
+            echo "::error::Ejecuta 'npx expo prebuild --platform ios' después de configurar expo.updates.url en app.json."
+            exit 1
+          fi
+          if [ "${NATIVE_URL}" != "${EXPECTED_URL}" ]; then
+            echo "::error::El proyecto nativo apunta a '${NATIVE_URL}' y app.json a '${EXPECTED_URL}'."
+            echo "::error::Ejecuta 'npx expo prebuild --platform ios' y commitea el resultado."
+            exit 1
+          fi
+          echo "Proyecto nativo al día: actualizaciones hacia ${NATIVE_URL}"
+
+  build:
+    name: 'Build de ${{ matrix.platform }}'
+    needs: verificar
+    runs-on: ubuntu-latest
+    # Un build de producción en EAS tarda 20-40 min por plataforma.
+    timeout-minutes: 90
+    strategy:
+      # Cada plataforma es independiente: que iOS falle no debe impedir
+      # publicar el APK de Android, ni al revés.
+      fail-fast: false
+      matrix:
+        platform: [android, ios]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ needs.verificar.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 'Instalar dependencias'
+        run: npm ci
+
+      # El perfil `release` de eas.json es de distribución interna: produce un
+      # APK instalable y un IPA ad hoc. El build ocurre en la nube de EAS; el
+      # runner de GitHub sólo orquesta y descarga el resultado.
+      - name: 'Compilar en EAS'
+        id: build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          PLATFORM: ${{ matrix.platform }}
+          REFRESH_PROVISIONING: ${{ inputs.refresh_provisioning }}
+          TAG: ${{ needs.verificar.outputs.tag }}
+        run: |
+          set -euo pipefail
+          args=(--profile release --platform "${PLATFORM}" --non-interactive --wait --json)
+          # El perfil ad hoc de iOS se reutiliza tal cual en una corrida no
+          # interactiva; el flag lo regenera con la lista de dispositivos
+          # vigente, que es lo que hace falta tras registrar un dispositivo.
+          if [ "${PLATFORM}" = "ios" ] && [ "${REFRESH_PROVISIONING}" = "true" ]; then
+            args+=(--refresh-ad-hoc-provisioning-profile)
+          fi
+          npx eas-cli@25.3.0 build "${args[@]}" > build.json
+          # `eas build --json` escribe el JSON en stdout y los logs en stderr.
+          # Se recorta lo que quede antes del primer corchete o llave.
+          sed -n '/^[[{]/,$p' build.json > build.clean.json
+          # `applicationArchiveUrl` es el instalable (el APK o el IPA);
+          # `buildUrl` es un artefacto adicional distinto.
+          URL=$(jq -r 'if type == "array" then .[0] else . end | .artifacts.applicationArchiveUrl // .artifacts.buildUrl // empty' build.clean.json)
+          if [ -z "${URL}" ]; then
+            echo "::error::El build de EAS no devolvió la URL de un artefacto instalable."
+            cat build.clean.json
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          case "${PLATFORM}" in
+            android) OUT="MiPensionL73-${VERSION}-android.apk" ;;
+            ios)     OUT="MiPensionL73-${VERSION}-ios.ipa" ;;
+          esac
+          curl -fsSL "${URL}" -o "${OUT}"
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+          echo "asset=${OUT}" >> "$GITHUB_OUTPUT"
+          ls -lh "${OUT}"
+
+      - name: 'Publicar el binario como artefacto'
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: binario-${{ matrix.platform }}
+          path: ${{ steps.build.outputs.asset }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: 'Publicar el release'
+    needs: [verificar, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: 'Descargar los binarios'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: binario-*
+          path: dist
+          merge-multiple: true
+
+      - name: 'Generar el changelog'
+        env:
+          TAG: ${{ needs.verificar.outputs.tag }}
+        run: |
+          set -euo pipefail
+          PREV=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
           if [ -z "$PREV" ]; then
-            RANGE="${GITHUB_REF}"
+            RANGE="${TAG}"
           else
-            RANGE="${PREV}..${GITHUB_REF}"
+            RANGE="${PREV}..${TAG}"
           fi
           {
-            echo "## Cambios en ${GITHUB_REF_NAME}"
+            echo "## Cambios en ${TAG}"
             echo
             echo "### Commits"
             echo
@@ -52,12 +250,34 @@ jobs:
           } > CHANGELOG.md
           cat CHANGELOG.md
 
-      - name: Crear el release de GitHub
+      # El release sólo se crea si los dos builds salieron bien. Si ya existe
+      # (una ejecución repetida sobre la misma etiqueta), se actualizan las
+      # notas y se reemplazan los binarios en vez de fallar.
+      - name: 'Crear el release de GitHub'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.verificar.outputs.tag }}
         run: |
           set -euo pipefail
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --notes-file CHANGELOG.md \
-            --verify-tag
+          if gh release view "${TAG}" > /dev/null 2>&1; then
+            gh release edit "${TAG}" --notes-file CHANGELOG.md
+            gh release upload "${TAG}" dist/* --clobber
+          else
+            gh release create "${TAG}" \
+              --title "${TAG}" \
+              --notes-file CHANGELOG.md \
+              --verify-tag \
+              dist/*
+          fi
+
+      - name: Resumen
+        env:
+          TAG: ${{ needs.verificar.outputs.tag }}
+        run: |
+          {
+            echo "### Release ${TAG}"
+            echo
+            echo "- Etiqueta: \`${TAG}\`"
+            echo "- Instalables: \`$(cd dist && ls | tr '\n' ' ')\`"
+            echo "- El APK se instala en cualquier Android; el IPA sólo en los dispositivos del perfil ad hoc."
+          } >> "$GITHUB_STEP_SUMMARY"

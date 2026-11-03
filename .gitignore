@@ -132,6 +132,8 @@ temp/
 
 coverage/
 .nyc_output/
+# Build temporal de la auditoría de contraste
+.audit-contrast-build/
 
 
 # =========================
@@ -145,3 +147,10 @@ coverage/
 
 expo-env.d.ts
 # @end expo-cli
+
+# =========================
+# QOPA DevSpace (especs, changes, estado local — no versionar)
+# =========================
+
+.agent/
+.devspace/

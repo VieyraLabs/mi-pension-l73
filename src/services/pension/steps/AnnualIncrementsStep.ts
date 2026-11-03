@@ -8,22 +8,23 @@
 import type { CalculationContext, CalculationStep } from '../types';
 import { DAYS_PER_YEAR_UMA, MINIMUM_WEEKS_VEJEZ, WEEKS_PER_YEAR } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
-import { calculateM40PlannedWeeks } from '../../../utils/modalidad40';
+import { describeWeeksProjection } from '../../../utils/weeksProjection';
 
 export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext => {
-  const { input, basicAmount, annualIncrementPct, effectiveDailySalary } = ctx;
-  const contributedWeeks = input.workHistory.totalWeeks;
-  // Meses de Modalidad 40 que el usuario planea contratar a futuro: no están
-  // incluidos en las semanas ya cotizadas, así que se suman al total con el
-  // que se calculan el mínimo de 500 semanas y los incrementos anuales.
-  const m40PlannedWeeks = calculateM40PlannedWeeks(input.modalidad40);
-  const totalWeeks = contributedWeeks + m40PlannedWeeks;
+  const { basicAmount, annualIncrementPct, effectiveDailySalary, weeksProjection } = ctx;
+  const { projectedWeeks, targetWeeks } = weeksProjection;
   const steps = [...ctx.steps];
 
-  // Semanas excedentes sobre el mínimo
-  const excessWeeks = Math.max(0, totalWeeks - MINIMUM_WEEKS_VEJEZ);
+  // Semanas excedentes sobre el mínimo (con las semanas proyectadas hasta la
+  // edad de retiro ya incluidas en el total).
+  const excessWeeks = Math.max(0, targetWeeks - MINIMUM_WEEKS_VEJEZ);
   // Años completos excedentes (cada 52 semanas = 1 año de incremento)
   const excessYears = Math.floor(excessWeeks / WEEKS_PER_YEAR);
+
+  // Desglose del horizonte: la proyección hasta la edad de retiro y, si las
+  // semanas de Modalidad 10 la exceden, el sobrante de M10. El mismo texto
+  // lo usa el esquema de validación del mínimo de 500 semanas.
+  const { breakdown, m10ExtraWeeks } = describeWeeksProjection(weeksProjection);
 
   // El incremento se calcula sobre el SBC anual y luego se divide entre 12 para obtener el mensual
   // Fuente: Art. 167 LSS 1973 — cada año adicional incrementa en annualIncrementPct% del SBC
@@ -37,20 +38,20 @@ export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext =
     id: 'incrementos_anuales',
     title: '3. Incrementos Anuales por Semanas Excedentes',
     description:
-      (m40PlannedWeeks > 0
-        ? `Semanas totales: ${contributedWeeks} cotizadas + ${m40PlannedWeeks} planeadas en Modalidad 40 = ${totalWeeks} `
-        : `Semanas totales: ${totalWeeks} `) +
+      `Semanas totales: ${breakdown} ` +
       `− 500 mínimas = ${excessWeeks} excedentes → ` +
-      `${excessYears} años completos × ${annualIncrementPct}% × $${effectiveDailySalary.toFixed(2)}/día × 365 días = ` +
-      `$${annualIncrement.toFixed(2)}/año → $${annualIncrements.toFixed(2)}/mes adicionales`,
+      `${excessYears} años completos × ${annualIncrementPct}% × ${effectiveDailySalary.toFixed(2)}/día × 365 días = ` +
+      `${annualIncrement.toFixed(2)}/año → ${annualIncrements.toFixed(2)}/mes adicionales`,
     value: annualIncrements,
     formula: `floor((semanas − 500) / 52) × ${annualIncrementPct}% × SBC_diario × 365 ÷ 12`,
     legalBasis: 'Art. 167 LSS 1973 — incrementos anuales por semanas adicionales',
-    isEstimate: m40PlannedWeeks > 0,
+    isEstimate: projectedWeeks > 0 || m10ExtraWeeks > 0,
     assumption:
-      m40PlannedWeeks > 0
-        ? 'Incluye las semanas proyectadas por los meses de Modalidad 40 que planeas contratar, además de las ya cotizadas.'
-        : undefined,
+      m10ExtraWeeks > 0
+        ? `Incluye las semanas planeadas por los meses de Modalidad 10 que planeas contratar (${breakdown}).`
+        : projectedWeeks > 0
+          ? `Incluye las semanas proyectadas hasta la edad de retiro (${breakdown}): se supone que sigues cotizando hasta jubilarte.`
+          : undefined,
   });
 
   steps.push({

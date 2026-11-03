@@ -67,7 +67,20 @@ Si el cambio afecta al comportamiento observable, la documentación tiene que es
 - [ ] Si cambió una decisión, hay un ADR nuevo (los ADRs no se reescriben).
 - [ ] El README describe el estado actual del proyecto.
 
-### 6. Aprobación
+### 6. Revisión de los instalables
+
+El tag de la versión compila los dos binarios y los adjunta al release. Antes de dar el
+release por bueno, hay que comprobar que los instalables que se distribuyen son los del
+commit aprobado:
+
+- [ ] El `.apk` del release instala y arranca en un Android físico.
+- [ ] El `.ipa` del release instala y arranca en un iPhone registrado en el perfil *ad hoc*.
+- [ ] La versión que muestra la app coincide con la del release.
+
+Los binarios se descargan de la página del release de GitHub, que es el mismo commit que
+pasó esta revisión.
+
+### 7. Aprobación
 
 La aprobación ocurre en GitHub, en el environment `production`: el job de
 `promotion-gate.yml` espera ahí. Revisar el resumen del workflow antes de aprobar: es el

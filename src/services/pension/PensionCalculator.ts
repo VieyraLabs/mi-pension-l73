@@ -18,10 +18,15 @@ import { AgeFactorStep } from './steps/AgeFactorStep';
 import { FamilyAssignmentsStep } from './steps/FamilyAssignmentsStep';
 import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
-import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
+import { AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
-import { calculateM40PlannedWeeks } from '../../utils/modalidad40';
-import { PensionInputSchema } from '../../validation/pensionSchema';
+import { calculateM10PlannedWeeks } from '../../utils/modalidad10';
+import {
+  calculateWeeksProjection,
+  getLocalReferenceDate,
+  normalizeLocalCalendarDate,
+} from '../../utils/weeksProjection';
+import { safeParsePensionInputAtReferenceDate } from '../../validation/pensionSchema';
 
 /** Resultado de validación previa al cálculo. */
 export interface ValidationResult {
@@ -38,11 +43,22 @@ export interface ValidationResult {
  */
 export function validateInput(input: PensionInput): ValidationResult {
   const warnings: string[] = [];
-  const parseResult = PensionInputSchema.safeParse(input);
+  const referenceDate = getLocalReferenceDate();
+  const parseResult = safeParsePensionInputAtReferenceDate(input, referenceDate);
   const errors = parseResult.success ? [] : parseResult.error.issues.map((issue) => issue.message);
 
-  const weeks = input.workHistory.totalWeeks + calculateM40PlannedWeeks(input.modalidad40);
-  if (weeks >= MINIMUM_WEEKS_VEJEZ && weeks < 520) {
+  // La proyección de semanas comparte la fecha de referencia con la validación.
+  const { targetWeeks } = calculateWeeksProjection({
+    currentWeeks: input.workHistory.totalWeeks,
+    age: input.personalData.age,
+    retirementAge: input.personalData.retirementAge,
+    referenceDate,
+    retirementDate: input.personalData.estimatedRetirementDate,
+    m10PlannedWeeks: input.modalidad10.active
+      ? calculateM10PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+      : 0,
+  });
+  if (targetWeeks >= MINIMUM_WEEKS_VEJEZ && targetWeeks < 520) {
     warnings.push(
       'Tienes justo el mínimo de semanas. Considera cotizar más para incrementar tu pensión.',
     );
@@ -62,10 +78,23 @@ export function validateInput(input: PensionInput): ValidationResult {
 /**
  * Crea el contexto inicial del pipeline con valores por defecto.
  */
-function createInitialContext(input: PensionInput): CalculationContext {
+function createInitialContext(
+  input: PensionInput,
+  referenceDate: Date,
+  m10PlannedWeeks: number,
+): CalculationContext {
   return {
     input,
-    effectiveDailySalary: input.averageSalary.dailySalary,
+    weeksProjection: calculateWeeksProjection({
+      currentWeeks: input.workHistory.totalWeeks,
+      age: input.personalData.age,
+      retirementAge: input.personalData.retirementAge,
+      referenceDate,
+      retirementDate: input.personalData.estimatedRetirementDate,
+      m10PlannedWeeks,
+    }),
+    m10PlannedWeeks,
+    effectiveDailySalary: input.projectedAverageDailySalary ?? input.averageSalary.dailySalary,
     salaryInTimesMinimumWage: 0,
     basicQuantityPct: 0,
     annualIncrementPct: 0,
@@ -106,10 +135,15 @@ const PIPELINE = [
  * @returns PensionResult con el resultado y desglose completo
  */
 export function calculatePension(input: PensionInput): PensionResult {
+  const calculationDate = new Date();
+  const referenceDate = normalizeLocalCalendarDate(calculationDate);
+  const m10PlannedWeeks = input.modalidad10.active
+    ? calculateM10PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+    : 0;
   // Ejecutar pipeline: cada paso recibe y devuelve un contexto
   const finalContext = PIPELINE.reduce<CalculationContext>(
     (ctx, step) => step(ctx),
-    createInitialContext(input),
+    createInitialContext(input, referenceDate, m10PlannedWeeks),
   );
 
   const monthlyPension = round2(finalContext.monthlyPension);
@@ -147,6 +181,7 @@ export function calculatePension(input: PensionInput): PensionResult {
     capApplied: finalContext.capApplied,
     pmgApplied: finalContext.pmgApplied,
     steps: stepsWithSummary,
+    weeksProjection: finalContext.weeksProjection,
     warnings: [
       ...finalContext.warnings,
       '⚠️ AVISO LEGAL: Este resultado es una estimación con fines informativos únicamente. ' +
@@ -154,59 +189,6 @@ export function calculatePension(input: PensionInput): PensionResult {
     ],
     isEstimate: true,
     input,
-    calculationDate: new Date().toISOString(),
+    calculationDate: calculationDate.toISOString(),
   };
-}
-
-/**
- * Calcula la pensión para un escenario simplificado (para el simulador de escenarios).
- */
-export function calculateSimpleScenario(params: {
-  semanasCotizadas: number;
-  salarioDiario: number;
-  umaDiaria: number;
-  edadRetiro: number;
-  tieneConyuge?: boolean;
-  tieneHijosMenores?: boolean;
-  numeroHijos?: number;
-}): number {
-  const input: PensionInput = {
-    personalData: {
-      sex: 'masculino',
-      birthDate: new Date(new Date().getFullYear() - params.edadRetiro, 0, 1),
-      age: params.edadRetiro,
-      estimatedRetirementDate: new Date(),
-      retirementAge: params.edadRetiro,
-    },
-    workHistory: {
-      totalWeeks: params.semanasCotizadas,
-      employmentRelations: [],
-    },
-    averageSalary: {
-      dailySalary: params.salarioDiario,
-      monthlySalary: round2(params.salarioDiario * AVERAGE_DAYS_PER_MONTH),
-      isManual: true,
-    },
-    uma: {
-      dailyUMA: params.umaDiaria,
-      monthlyUMA: round2(params.umaDiaria * AVERAGE_DAYS_PER_MONTH),
-      annualUMA: round2(params.umaDiaria * DAYS_PER_YEAR_UMA),
-      year: new Date().getFullYear(),
-      isCustom: false,
-    },
-    modalidad40: { active: false },
-    beneficiaries: {
-      hasSpouse: params.tieneConyuge ?? false,
-      hasMinorChildren: params.tieneHijosMenores ?? false,
-      numberOfMinorChildren: params.numeroHijos ?? 0,
-      hasDependentParents: false,
-      numberOfDependentParents: 0,
-    },
-  };
-
-  const validation = validateInput(input);
-  if (!validation.valid) return 0;
-
-  const result = calculatePension(input);
-  return result.monthlyPension;
 }
