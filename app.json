@@ -61,6 +61,9 @@
         "projectId": "5fd386e2-77d0-4b5c-a26d-038482f804bd"
       }
     },
-    "owner": "alanvieyra333"
+    "owner": "alanvieyra333",
+    "updates": {
+      "url": "https://u.expo.dev/5fd386e2-77d0-4b5c-a26d-038482f804bd"
+    }
   }
 }
