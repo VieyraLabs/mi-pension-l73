@@ -819,6 +819,10 @@ export default function MultiComparisonScreen() {
               title={entry.metrics.m10Label}
               titleStyle={{ color: theme.colors.onSurface }}
               style={{ backgroundColor: theme.colors.surface }}
+              // Identificador propio del acordeón: el título de la simulación
+              // aparece también en la tabla y en la leyenda de la gráfica, así
+              // que la etiqueta no sirve para apuntar a un elemento concreto.
+              testID={`multi-accordion-${entry.simulationId}`}
               expanded={expandedSimulationId === entry.simulationId}
               onPress={() =>
                 setExpandedSimulationId((current) =>

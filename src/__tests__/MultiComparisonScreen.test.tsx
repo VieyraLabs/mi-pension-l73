@@ -221,7 +221,7 @@ describe('MultiComparisonScreen', () => {
     // El detalle queda como drill-down opcional (accordion), no como pestañas, y
     // replica el formato del «Resumen de la comparativa» individual.
     expect(screen.getByText('Detalle por simulación')).toBeTruthy();
-    fireEvent.press(screen.getAllByText('M10 con 7.95 UMAs').at(-1)!);
+    fireEvent.press(screen.getByTestId(`multi-accordion-${a.id}`));
     await waitFor(() => expect(screen.getByText('Costos de la Modalidad 10')).toBeTruthy());
     expect(screen.getByText('¿En qué momento conviene?')).toBeTruthy();
     expect(screen.getAllByText('Costo real de la Modalidad 10').length).toBeGreaterThanOrEqual(1);
@@ -236,13 +236,13 @@ describe('MultiComparisonScreen', () => {
     await waitFor(() => expect(screen.getByText('Detalle por simulación')).toBeTruthy());
 
     // Por defecto está expandida la de MAYOR UMA (b) y ninguna otra.
-    expect(screen.getByTestId(`multi-detail-${b.id}`)).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId(`multi-detail-${b.id}`)).toBeTruthy());
     expect(screen.queryByTestId(`multi-detail-${a.id}`)).toBeNull();
 
     // Al expandir a (menor UMA), b se contrae: sigue habiendo solo una abierta.
-    fireEvent.press(screen.getAllByText('M10 con 7.95 UMAs').at(-1)!);
+    fireEvent.press(screen.getByTestId(`multi-accordion-${a.id}`));
     await waitFor(() => expect(screen.getByTestId(`multi-detail-${a.id}`)).toBeTruthy());
-    expect(screen.queryByTestId(`multi-detail-${b.id}`)).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId(`multi-detail-${b.id}`)).toBeNull());
   });
 
   test('muestra la gráfica con todas las series M10 más una única base (SCN-008)', async () => {
