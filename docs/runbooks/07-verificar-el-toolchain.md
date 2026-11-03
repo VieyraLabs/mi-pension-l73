@@ -37,7 +37,7 @@ demostrado).
   `splash` del root ya no es válido (lo maneja el plugin
   `expo-splash-screen`). Con los directorios nativos `ios/` versionados, esos
   campos no se sincronizan en EAS Build de todos modos — el campo sobrante se
-  elimina y el splash real vive en `ios/MiPensionMX/SplashScreen.storyboard`.
+  elimina y el splash real vive en `ios/MiPensionL73/SplashScreen.storyboard`.
 
 ### 3. Deuda menor: documentar, no arreglar a ciegas
 
@@ -94,7 +94,7 @@ La prueba local de que el proyecto sigue compilando para iOS sigue siendo
 del paso 4.
 
 Los dos workflows que dependen de las actualizaciones (`release.yml` y
-`deploy-staging.yml`) comprueban que `ios/MiPensionMX/Supporting/Expo.plist` tenga
+`deploy-staging.yml`) comprueban que `ios/MiPensionL73/Supporting/Expo.plist` tenga
 `EXUpdatesEnabled` en `True` y el mismo `EXUpdatesURL` que `app.json`. Con el
 repositorio sin vincular a EAS, esas comprobaciones fallan: es el comportamiento
 correcto, no un falso positivo.

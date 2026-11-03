@@ -111,7 +111,7 @@ jobs:
       - name: 'Verificar que el proyecto nativo está al día'
         run: |
           set -euo pipefail
-          PLIST="ios/MiPensionMX/Supporting/Expo.plist"
+          PLIST="ios/MiPensionL73/Supporting/Expo.plist"
           if [ ! -f "${PLIST}" ]; then
             echo "::error::No existe ${PLIST}. Regenera el proyecto nativo con 'npx expo prebuild --platform ios'."
             exit 1
@@ -195,8 +195,8 @@ jobs:
           fi
           VERSION="${TAG#v}"
           case "${PLATFORM}" in
-            android) OUT="MiPensionMX-${VERSION}-android.apk" ;;
-            ios)     OUT="MiPensionMX-${VERSION}-ios.ipa" ;;
+            android) OUT="MiPensionL73-${VERSION}-android.apk" ;;
+            ios)     OUT="MiPensionL73-${VERSION}-ios.ipa" ;;
           esac
           curl -fsSL "${URL}" -o "${OUT}"
           echo "url=${URL}" >> "$GITHUB_OUTPUT"

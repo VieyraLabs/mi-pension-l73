@@ -1,4 +1,4 @@
-# Mi Pensión MX — Calculadora de pensión IMSS (Ley 73)
+# Mi Pensión L73 — Calculadora de pensión IMSS (Ley 73)
 
 > **English summary below.** App móvil que estima la pensión de vejez bajo la **Ley del
 > Seguro Social de 1973** en México. **React Native + Expo + TypeScript**, **sin backend**
@@ -246,8 +246,8 @@ auditoría: [runbook-07](docs/runbooks/07-verificar-el-toolchain.md).
 ### Instalación
 
 ```bash
-git clone https://github.com/VieyraLabs/mi-pension-mx.git
-cd mi-pension-mx
+git clone https://github.com/VieyraLabs/mi-pension-l73.git
+cd mi-pension-l73
 npm install
 npm start
 ```

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Mi Pension MX",
-    "slug": "mi-pension-mx",
+    "name": "Mi Pensión L73",
+    "slug": "mi-pension-l73",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
@@ -14,9 +14,9 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vieyralabs.mipensionmx",
+      "bundleIdentifier": "com.vieyralabs.mipensionl73",
       "infoPlist": {
-        "CFBundleDisplayName": "Mi Pensión MX"
+        "CFBundleDisplayName": "Mi Pensión L73"
       }
     },
     "android": {
@@ -24,7 +24,7 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#047857"
       },
-      "package": "com.vieyralabs.mipensionmx"
+      "package": "com.vieyralabs.mipensionl73"
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
@@ -55,6 +55,12 @@
         }
       ]
     ],
-    "scheme": "mipension"
+    "scheme": "mipension",
+    "extra": {
+      "eas": {
+        "projectId": "5fd386e2-77d0-4b5c-a26d-038482f804bd"
+      }
+    },
+    "owner": "alanvieyra333"
   }
 }

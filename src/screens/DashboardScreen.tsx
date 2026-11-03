@@ -52,7 +52,7 @@ export default function DashboardScreen() {
     >
       {/* Header */}
       <ScreenHeader
-        title="Mi Pensión MX"
+        title="Mi Pensión L73"
         subtitle="Calculadora de Pensión IMSS Ley 73"
       >
         <View style={styles.headerBadge}>

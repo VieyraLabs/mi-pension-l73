@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Registro de decisiones de arquitectura de **Mi Pensión MX**. Cada ADR documenta el
+Registro de decisiones de arquitectura de **Mi Pensión L73**. Cada ADR documenta el
 contexto, la decisión, sus consecuencias y las alternativas que se descartaron.
 
 **Regla de escritura:** un ADR se escribe *después* de que la decisión esté tomada y

@@ -10,7 +10,7 @@ razonamiento ver [`docs/adr/`](docs/adr/).
 
 ## Qué es
 
-**Mi Pensión MX** es una aplicación móvil que estima la pensión de vejez bajo la
+**Mi Pensión L73** es una aplicación móvil que estima la pensión de vejez bajo la
 **Ley del Seguro Social de 1973** (Ley 73) en México. El usuario ingresa sus datos de
 cotización y obtiene una estimación con el desglose de cómo se calculó, paso a paso, con
 la referencia legal de cada paso.

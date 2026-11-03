@@ -1,7 +1,7 @@
 # Spec-10 — Actualizaciones por OTA
 
 - **Estado**: Vigente
-- **Ámbito**: `app.json`, `ios/MiPensionMX/Supporting/Expo.plist`, `eas.json`, proceso de release
+- **Ámbito**: `app.json`, `ios/MiPensionL73/Supporting/Expo.plist`, `eas.json`, proceso de release
 
 ## Propósito
 
@@ -38,7 +38,7 @@ lo que ya tenga en caché.
 - **El proyecto nativo commiteado es el que manda.** `ios/` está versionado y EAS Build no
   ejecuta prebuild cuando el directorio nativo existe: usa `ios/` tal como está en el
   commit. Por eso `EXUpdatesEnabled` y `EXUpdatesURL` de
-  `ios/MiPensionMX/Supporting/Expo.plist` tienen que coincidir con `expo.updates.url` de
+  `ios/MiPensionL73/Supporting/Expo.plist` tienen que coincidir con `expo.updates.url` de
   `app.json`. Si no coinciden, las actualizaciones están desactivadas en el binario y el
   fallo sólo se ve en runtime.
 - **`expo.updates.enabled` no se declara.** El valor efectivo lo decide `app.json`: sin
@@ -62,7 +62,7 @@ lo que ya tenga en caché.
 ## Verificación
 
 - Los dos workflows que dependen de las actualizaciones comprueban, antes de compilar, que
-  `ios/MiPensionMX/Supporting/Expo.plist` tiene `EXUpdatesEnabled` en `True` y el mismo
+  `ios/MiPensionL73/Supporting/Expo.plist` tiene `EXUpdatesEnabled` en `True` y el mismo
   `EXUpdatesURL` que `app.json`. Con el repositorio en su estado actual, esas
   verificaciones **fallan**, que es lo correcto: el proyecto todavía no está vinculado a
   EAS.

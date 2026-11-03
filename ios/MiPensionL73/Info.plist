@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Mi Pensión MX</string>
+	<string>Mi Pensión L73</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -28,7 +28,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>mipension</string>
-				<string>com.vieyralabs.mipensionmx</string>
+				<string>com.vieyralabs.mipensionl73</string>
 			</array>
 		</dict>
 	</array>

@@ -15,7 +15,7 @@ mensaje que dice exactamente cuál es.
       resultado se commitea.
 - [ ] **URL de actualizaciones configurada.** `app.json` tiene `expo.updates.url`. Se
       obtiene con `npx eas-cli update:configure` y también se commitea.
-- [ ] **Proyecto nativo al día.** `ios/MiPensionMX/Supporting/Expo.plist` tiene
+- [ ] **Proyecto nativo al día.** `ios/MiPensionL73/Supporting/Expo.plist` tiene
       `EXUpdatesEnabled` en `True` y el mismo `EXUpdatesURL` que `app.json`. Como `ios/`
       está versionado y EAS no ejecuta prebuild, ese archivo es el que decide si las
       actualizaciones funcionan en el binario. Se regenera con el paso 3 de
@@ -113,7 +113,7 @@ El tag dispara `release.yml`, que hace tres cosas en orden:
    (distribución interna). Los dos builds van en paralelo; si uno falla, el otro se
    publica igual.
 3. **Publica** el release de GitHub con el changelog y los dos binarios adjuntos:
-   `MiPensionMX-1.2.0-android.apk` y `MiPensionMX-1.2.0-ios.ipa`.
+   `MiPensionL73-1.2.0-android.apk` y `MiPensionL73-1.2.0-ios.ipa`.
 
 El build tarda 20-40 minutos por plataforma. La corrida se puede repetir sobre la misma
 etiqueta: el workflow detecta que el release ya existe y reemplaza los binarios en vez de
@@ -161,7 +161,7 @@ Generar uno en el panel de Expo y configurarlo como secreto del repositorio
 `extra.eas.projectId` en `app.json`. Correr `npx eas-cli init` y commitear el resultado.
 
 **El job de verificación dice que el proyecto nativo no está al día.** `app.json` y
-`ios/MiPensionMX/Supporting/Expo.plist` no coinciden. Regenerar el proyecto nativo
+`ios/MiPensionL73/Supporting/Expo.plist` no coinciden. Regenerar el proyecto nativo
 (paso 3 de [runbook 07](07-verificar-el-toolchain.md)) y commitearlo.
 
 **La puerta de promoción no aparece.** La ejecución del workflow no llegó al job de

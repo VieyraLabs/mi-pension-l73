@@ -107,7 +107,7 @@ function generateHtml(result: PensionResult): string {
 </head>
 <body>
   <h1>🧮 Calculadora de Pensión IMSS Ley 73</h1>
-  <p style="font-size: 12px; color: #55637A;">Generado el ${formatDateLong(calculationDate)} | Mi Pensión MX</p>
+  <p style="font-size: 12px; color: #55637A;">Generado el ${formatDateLong(calculationDate)} | Mi Pensión L73</p>
 
   <div class="estimacion-banner">
     ⚠️ <strong>AVISO LEGAL:</strong> Este reporte contiene ESTIMACIONES con fines informativos únicamente.
@@ -171,7 +171,7 @@ function generateHtml(result: PensionResult): string {
   </ul>
 
   <div class="footer">
-    <p><strong>Mi Pensión MX</strong> — Calculadora de Pensión IMSS Ley 73</p>
+    <p><strong>Mi Pensión L73</strong> — Calculadora de Pensión IMSS Ley 73</p>
     <p>Esta aplicación es solo para fines informativos. No constituye asesoría legal ni financiera.</p>
     <p>Para información oficial sobre tu pensión, visita imss.gob.mx o acude a la Subdelegación del IMSS de tu zona.</p>
     <p>Fuentes: Ley del Seguro Social de 1973 (DOF 12-mar-1973); Criterios operativos IMSS.</p>
