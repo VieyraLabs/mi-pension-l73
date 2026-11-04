@@ -32,6 +32,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md) | Calcular la cuota de la Modalidad 10 con la estructura de financiamiento oficial del IMSS | Aceptada | 2026-10-30 |
 | [0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md) | Usar el catálogo oficial de ocupaciones del IMSS para la Modalidad 10 | Aceptada | 2026-10-30 |
 | [0017](0017-el-tag-produce-los-instalables-del-release.md) | El tag produce los instalables del release | Aceptada | 2026-11-03 |
+| [0018](0018-el-nombre-del-proyecto-nativo-deriva-de-expo-name.md) | El nombre del proyecto nativo de iOS se deriva de `expo.name`, y `expo.name` es ASCII | Aceptada | 2026-11-03 |
 
 ## Formato
 

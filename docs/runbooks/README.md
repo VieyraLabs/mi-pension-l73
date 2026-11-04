@@ -16,6 +16,7 @@ problema delante.
 | [06](06-revision-previa-a-una-publicacion.md) | Revisión previa a una publicación | Antes de abrir la puerta de promoción |
 | [07](07-verificar-el-toolchain.md) | Verificar el toolchain | Cuando algo falla por el entorno |
 | [08](08-auditar-el-contraste-de-la-interfaz.md) | Auditar el contraste de la interfaz | Al cambiar un color del tema o una superficie |
+| [09](09-regenerar-el-proyecto-nativo-de-ios.md) | Regenerar el proyecto nativo de iOS | Al cambiar una dependencia nativa o el nombre del proyecto |
 
 ## Formato
 

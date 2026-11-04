@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Mi Pensión L73",
+    "name": "MiPensionL73",
     "slug": "mi-pension-l73",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -30,6 +30,7 @@
       "favicon": "./src/assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withAndroidAppName",
       [
         "expo-document-picker",
         {
