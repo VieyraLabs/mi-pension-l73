@@ -156,8 +156,8 @@ describe('MultiComparisonScreen', () => {
     expect(headerCells[1]!.props.testID).toBe(`multi-header-${a.id}`);
 
     // Columnas = simulaciones seleccionadas (en la tabla y en el drill-down).
-    expect(screen.getAllByText('M10 con 7.95 UMAs').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText('M10 con 14.14 UMAs').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('M10 con 7.95 UMAs (120 meses)').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('M10 con 14.14 UMAs (120 meses)').length).toBeGreaterThanOrEqual(2);
 
     // Filas = métricas clave (DEC-015). Algunas etiquetas también aparecen en
     // el detalle expandido de la simulación de mayor UMA, así que se acepta ≥1.
@@ -270,8 +270,8 @@ describe('MultiComparisonScreen', () => {
     await waitFor(() => expect(screen.getByText('En 6 años')).toBeTruthy());
     expect(screen.getByText('Flujo acumulado a esa fecha (pensión − cuotas)')).toBeTruthy();
     // Una fila por serie (2 simulaciones + base) con su valor en ese mes.
-    expect(screen.getAllByText('M10 con 7.95 UMAs').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('M10 con 14.14 UMAs').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('M10 con 7.95 UMAs (120 meses)').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('M10 con 14.14 UMAs (120 meses)').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByTestId('multi-chart-selection-line')).toBeTruthy();
   });
 

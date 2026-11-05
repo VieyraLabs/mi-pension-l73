@@ -176,7 +176,7 @@ describe('calculateMultiComparison', () => {
       result.weeksProjection?.targetWeeks ?? result.input.workHistory.totalWeeks,
     );
     expect(metrics.projectedDailySalary).toBe(800);
-    expect(metrics.m10Label).toBe('M10 con 10.61 UMAs');
+    expect(metrics.m10Label).toBe('M10 con 10.61 UMAs (120 meses)');
     expect(metrics.earlyMonthlyPension).toBe(multi.entries[0]!.comparison.earlyMonthlyPension);
     expect(metrics.realM10Cost).toBeCloseTo(metrics.totalM10Cost + metrics.forgonePension, 2);
   });

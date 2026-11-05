@@ -251,6 +251,14 @@ export default function HistoryScreen() {
                         onPress={() => navigation.navigate('Result', { simulationId: sim.id })}
                       />
                       <IconButton
+                        icon="compare-horizontal"
+                        iconColor={theme.colors.primary}
+                        size={20}
+                        accessibilityLabel="Comparar simulación"
+                        testID={`compare-single-${sim.id}`}
+                        onPress={() => navigation.navigate('Comparison', { simulationId: sim.id })}
+                      />
+                      <IconButton
                         icon="delete-outline"
                         iconColor={theme.colors.error}
                         size={20}

@@ -128,6 +128,16 @@ describe('HistoryScreen', () => {
     expect(screen.getAllByLabelText('Eliminar simulación')).toHaveLength(3);
   });
 
+  test('el icono de comparar abre la comparación de esa simulación sola', async () => {
+    const { mariaA } = await seedHistory();
+    renderScreen(<HistoryScreen />);
+
+    await screen.findByText(`Historial de simulaciones (3/${MAX_SIMULATIONS})`);
+
+    fireEvent.press(screen.getByTestId(`compare-single-${mariaA.id}`));
+    expect(mockNavigate).toHaveBeenCalledWith('Comparison', { simulationId: mariaA.id });
+  });
+
   test('muestra el costo mensual de la Modalidad 10 junto a las UMAs declaradas', async () => {
     const umasDeclaradas = 7.96;
     await saveSimulation(

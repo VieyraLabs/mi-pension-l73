@@ -12,7 +12,8 @@ consultar, sin cuenta y sin nube.
 
 El historial guarda simulaciones completas —los datos de entrada y el resultado, con su
 desglose— en `AsyncStorage`, bajo la clave `@mi_pension_mx:simulaciones`. La pantalla de
-historial las lista, permite abrir una para ver su desglose y permite eliminarlas.
+historial las lista, permite abrir una para ver su desglose, permite abrir la comparación
+de una sola simulación y permite eliminarlas.
 
 ## Reglas de negocio
 

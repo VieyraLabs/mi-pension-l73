@@ -99,7 +99,10 @@ export interface MultiComparisonInput {
  * comparativa (DEC-015). No se recalculan en la UI.
  */
 export interface MultiComparisonMetrics {
-  /** Etiqueta identificadora de la simulación: tipo de Modalidad 10 («M10 con X UMAs»). */
+  /**
+   * Etiqueta identificadora de la simulación: tipo de Modalidad 10 («M10 con
+   * X UMAs») y su periodo de contratación («M10 con X UMAs (120 meses)»).
+   */
   m10Label: string;
   /** Pensión mensual estimada de la simulación (con su propia Modalidad 10). */
   monthlyPension: number;

@@ -17,7 +17,7 @@ import {
   normalizeLocalCalendarDate,
 } from '../../../utils/weeksProjection';
 import { addMonths, calculateRetirementDate } from '../../../utils/date';
-import { formatUMAs, round2 } from '../../../utils/format';
+import { formatInteger, formatUMAs, round2 } from '../../../utils/format';
 import type {
   BreakEvenPoint,
   ComparisonResult,
@@ -312,6 +312,18 @@ export function getM10Label(input: PensionInput): string {
 }
 
 /**
+ * Etiqueta identificadora de una simulación con su periodo de contratación de
+ * la Modalidad 10: «M10 con X UMAs (120 meses)». El periodo es lo que permite
+ * distinguir dos M10 con las MISMAS UMAs pero distinto tiempo de contratación
+ * (DEC-015). Sin Modalidad 10 no hay periodo y la etiqueta no cambia.
+ */
+export function getM10LabelWithPeriod(input: PensionInput, periodMonths: number | null): string {
+  const label = getM10Label(input);
+  if (periodMonths == null) return label;
+  return `${label} (${formatInteger(periodMonths)} meses)`;
+}
+
+/**
  * Métricas del resumen de una simulación, derivadas de su comparación y de su
  * propio input (DEC-015). La UI no recalcula ninguna de estas cifras.
  */
@@ -320,12 +332,21 @@ export function getMultiComparisonMetrics(
   comparison: ComparisonResult,
 ): MultiComparisonMetrics {
   const input = result.input;
+  const m10 = input.modalidad10;
+  const retirementDate = normalizeLocalCalendarDate(
+    coerceDate(input.personalData.estimatedRetirementDate),
+  );
+  // Periodo de contratación de la Modalidad 10, en meses. Es lo que distingue
+  // dos M10 con las mismas UMAs pero distinto tiempo de contratación. Se usa el
+  // valor capturado en el formulario y, si el registro es antiguo y no lo
+  // tiene, se deriva de la fecha de referencia y la fecha de retiro.
+  const m10PeriodMonths = m10.active
+    ? (m10.expectedMonths ?? estimateM10Months(comparison.referenceDate, retirementDate))
+    : null;
   return {
-    m10Label: getM10Label(input),
+    m10Label: getM10LabelWithPeriod(input, m10PeriodMonths),
     monthlyPension: result.monthlyPension,
-    retirementDate: normalizeLocalCalendarDate(
-      coerceDate(input.personalData.estimatedRetirementDate),
-    ),
+    retirementDate,
     retirementAge: input.personalData.retirementAge,
     totalWeeks: result.weeksProjection?.targetWeeks ?? input.workHistory.totalWeeks,
     projectedDailySalary:

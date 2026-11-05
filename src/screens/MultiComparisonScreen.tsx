@@ -178,7 +178,7 @@ function TableHeader({
           <Text
             variant="labelMedium"
             style={{ color: theme.colors.primary, fontWeight: 'bold' }}
-            numberOfLines={2}
+            numberOfLines={3}
           >
             {entry.metrics.m10Label}
           </Text>
