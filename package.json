@@ -60,6 +60,7 @@
     "@babel/core": "^7.25.2",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
+    "@types/node": "^26.1.2",
     "@types/react": "~19.2.0",
     "@typescript-eslint/eslint-plugin": "^8.18.1",
     "@typescript-eslint/parser": "^8.18.1",
@@ -80,8 +81,13 @@
     ],
     "testTimeout": 30000,
     "transformIgnorePatterns": [
-      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|pdfjs-dist)"
     ],
+    "transform": {
+      "\\.mjs$": [
+        "babel-jest"
+      ]
+    },
     "collectCoverageFrom": [
       "src/services/**/*.ts",
       "src/hooks/**/*.ts",

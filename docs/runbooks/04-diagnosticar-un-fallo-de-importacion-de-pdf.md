@@ -31,10 +31,14 @@ La importación tiene cuatro etapas y cada una falla de forma distinta:
 
 ### 2. Verificar la extracción
 
-En web, el flujo usa `pdfjs-dist` y debería extraer texto de cualquier PDF digital. En
-nativo sin development build, el fallback heurístico **no decodifica streams
-comprimidos** (`FlateDecode`): solo encuentra texto en PDFs no comprimidos. Si el
-problema es específico de nativo, esa es casi seguro la causa.
+Las dos plataformas extraen con `pdfjs-dist` y deberían sacar texto de cualquier PDF digital.
+Lo que cambia es dónde corre el worker de pdf.js: en web, en un Web Worker; en nativo, en el
+hilo principal (ver
+[ADR-0019](../adr/0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md)). Si en nativo el texto
+sale vacío pero el PDF sí tiene texto, el problema **no** es el formato del documento: habría
+que mirar los shims de `src/services/pdf/pdfjsEnvironment.ts` (si el worker de pdf.js ni
+arranca, la app se queda sin texto) o el parche
+`patches/pdfjs-dist+6.2.108.patch` (si falta, el bundle ni siquiera compila).
 
 ### 3. Comparar el texto extraído con el esperado
 
@@ -101,9 +105,22 @@ npm run typecheck && npm run lint && npm run test:run
 
 ## Si algo falla
 
-**El texto sale vacío pero el PDF sí tiene texto.** En nativo, el fallback heurístico no
-decodifica streams comprimidos. Es una limitación conocida y documentada, no un bug de
-parsing. La ruta soportada es la web o un development build.
+**El texto sale vacío pero el PDF sí tiene texto.** Las dos plataformas usan `pdfjs-dist`, que
+decodifica streams comprimidos, así que un texto vacío significa que el documento no tiene
+texto seleccionable (escaneado) o que el worker de pdf.js no arrancó. En nativo, lo segundo
+apunta a los shims de `src/services/pdf/pdfjsEnvironment.ts`.
+
+**El build de iOS no compila.** Hermes no acepta el `import()` dinámico con el que pdf.js
+carga su worker: sin `patches/pdfjs-dist+6.2.108.patch` (que se aplica en `postinstall`) el
+bundle falla con "Invalid expression encountered".
+
+**En iOS la extracción devuelve vacío aunque el PDF tenga texto.** La causa más probable es
+que falte el parche: pdf.js entrega el texto por streaming y React Native no tiene
+`ReadableStream` (ni Hermes ni Expo lo instalan). Sin el parche, la llamada lanza
+`Property 'ReadableStream' doesn't exist`, la extracción se traga el error y la app informa
+que el PDF "parece estar escaneado" — un mensaje que culpa al documento de algo que es del
+entorno. Para comprobarlo sin dispositivo: ejecutar el bundle bajo el Hermes del repo
+(`ios/Pods/hermes-engine`) y comparar el texto extraído con el de Node.
 
 **El texto sale con los caracteres mal codificados.** La constancia usa una codificación
 distinta a UTF-8. Ajustar la decodificación en `PdfTextExtractor`.

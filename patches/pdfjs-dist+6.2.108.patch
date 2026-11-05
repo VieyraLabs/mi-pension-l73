@@ -1,0 +1,130 @@
+diff --git a/node_modules/pdfjs-dist/legacy/build/pdf.mjs b/node_modules/pdfjs-dist/legacy/build/pdf.mjs
+index 1529140..9cbc211 100644
+--- a/node_modules/pdfjs-dist/legacy/build/pdf.mjs
++++ b/node_modules/pdfjs-dist/legacy/build/pdf.mjs
+@@ -22157,18 +22157,16 @@ class PDFPageProxy {
+     if (this._transport._htmlForXfa) {
+       return this.getXfa().then(xfa => XfaText.textContent(xfa));
+     }
+-    const readableStream = this.streamTextContent(params);
+-    const textContent = {
+-      items: [],
+-      styles: Object.create(null),
+-      lang: null
+-    };
+-    for await (const value of readableStream) {
+-      textContent.lang ??= value.lang;
+-      Object.assign(textContent.styles, value.styles);
+-      textContent.items.push(...value.items);
+-    }
+-    return textContent;
++    // Parcheado (ver patches/pdfjs-dist+6.2.108.patch): la ruta original
++    // entrega el texto por streaming y necesita `ReadableStream`, un global
++    // que React Native no tiene. La ruta por promesa entrega lo mismo.
++    const { includeMarkedContent = false, disableNormalization = false } = params;
++    return this._transport.messageHandler.sendWithPromise("GetTextContent", {
++      pageId: this.#pagesMapper.getPageId(this._pageIndex + 1) - 1,
++      pageIndex: this._pageIndex,
++      includeMarkedContent: includeMarkedContent === true,
++      disableNormalization: disableNormalization === true
++    });
+   }
+   getStructTree() {
+     return this._transport.getStructTree(this._pageIndex);
+@@ -22541,11 +22539,7 @@ class PDFWorker {
+       if (this.#mainThreadWorkerMessageHandler) {
+         return this.#mainThreadWorkerMessageHandler;
+       }
+-      const worker = await import(
+-      /*webpackIgnore: true*/
+-      /*@vite-ignore*/
+-      this.workerSrc);
+-      return worker.WorkerMessageHandler;
++      throw new Error("Dynamic import is not supported in this build: set globalThis.pdfjsWorker.");
+     };
+     return shadow(this, "_setupFakeWorkerGlobal", loader());
+   }
+diff --git a/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs b/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs
+index ff381bb..463a638 100644
+--- a/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs
++++ b/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs
+@@ -15391,11 +15391,7 @@ class WasmImage {
+   async #getJsModule(fallbackCallback) {
+     let instance = null;
+     try {
+-      const mod = await import(
+-      /*webpackIgnore: true*/
+-      /*@vite-ignore*/
+-      `${WasmImage.#wasmUrl}${this._noWasmFilename}`);
+-      instance = mod.default();
++      throw new Error("Dynamic import is not supported in this build.");
+     } catch (ex) {
+       warn(`#getJsModule: ${ex}`);
+     }
+@@ -70989,26 +70985,61 @@ class WorkerMessageHandler {
+       includeMarkedContent,
+       disableNormalization
+     }, sink) {
+-      pdfManager.getPage(pageId).then(function (page) {
++      // Parcheado (ver patches/pdfjs-dist+6.2.108.patch): sin `sink` (la ruta
++      // por promesa) se acumulan los trozos y se devuelven enteros; con
++      // `sink` (la ruta por streaming) se comporta como antes.
++      return pdfManager.getPage(pageId).then(function (page) {
+         const task = new WorkerTask("GetTextContent: page " + pageIndex);
+         startWorkerTask(task);
+         const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
+-        page.extractTextContent({
++        const chunks = [];
++        const collectingSink = sink ?? {
++          desiredSize: Infinity,
++          ready: Promise.resolve(),
++          enqueue: function (chunk) {
++            // pdf.js reutiliza el objeto del chunk y lo vacía después de
++            // encolarlo: hay que copiarlo, no guardar la referencia.
++            chunks.push({
++              items: chunk.items.slice(),
++              styles: Object.assign({}, chunk.styles),
++              lang: chunk.lang
++            });
++          }
++        };
++        return page.extractTextContent({
+           handler,
+           task,
+-          sink,
++          sink: collectingSink,
+           includeMarkedContent,
+           disableNormalization
+         }).then(() => {
+           if (start) {
+             info(`${task.name}; time=${Date.now() - start}ms`);
+           }
+-          sink.close();
++          if (sink) {
++            sink.close();
++            return undefined;
++          }
++          const textContent = {
++            items: [],
++            styles: Object.create(null),
++            lang: null
++          };
++          for (const value of chunks) {
++            textContent.lang ??= value.lang;
++            Object.assign(textContent.styles, value.styles);
++            textContent.items.push(...value.items);
++          }
++          return textContent;
+         }, reason => {
+           if (task.terminated) {
+             return;
+           }
+-          sink.error(reason);
++          if (sink) {
++            sink.error(reason);
++            return;
++          }
++          throw reason;
+         }).finally(() => {
+           finishWorkerTask(task);
+         });

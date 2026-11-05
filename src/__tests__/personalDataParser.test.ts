@@ -956,3 +956,37 @@ describe('ConstanciaIMSSParser — periodos considerados en el promedio', () => 
     expect(result.data?.contributionSummary?.isComplete).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────
+// Compatibilidad con Hermes
+// ─────────────────────────────────────────────
+//
+// Hermes (el motor de React Native) no puebla `groups` en los resultados de
+// `String.prototype.matchAll`: el parser tenía que leer los grupos con
+// nombre y en el dispositivo se leían TODAS las filas de movimiento como
+// vacías, así que no había historial que reconstruir.
+describe('ConstanciaIMSSParser — compatibilidad con Hermes', () => {
+  test('el parser funciona aunque matchAll NO devuelva "groups" (así funciona en Hermes)', () => {
+    // Hermes (el motor de React Native) no puebla `groups` en los resultados
+    // de `String.prototype.matchAll`: el parser tenía que leer los grupos con
+    // nombre y en el dispositivo se leían TODAS las filas de movimiento como
+    // vacías, así que no había historial que reconstruir.
+    const originalMatchAll = String.prototype.matchAll;
+    const sinGrupos = function (this: string, regex: RegExp) {
+      return [...originalMatchAll.call(this, regex)].map((coincidencia) => ({
+        ...coincidencia,
+        groups: undefined,
+      }));
+    };
+    String.prototype.matchAll = sinGrupos as unknown as typeof String.prototype.matchAll;
+
+    try {
+      const result = ConstanciaIMSSParser.parse(TEXTO_DETALLE_COMPLETO);
+
+      expect(result.data?.employmentRelations).toHaveLength(1);
+      expect(result.data?.averageSBC).toBeDefined();
+    } finally {
+      String.prototype.matchAll = originalMatchAll;
+    }
+  });
+});

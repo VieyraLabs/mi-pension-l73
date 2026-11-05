@@ -373,9 +373,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * MODIFICACION DE SALARIO y BAJA. Un tipo que falte aquí NO es inocuo: su
  * monto se cuela en la lista de SBC de encabezado, el emparejamiento por
  * patrón deja de cuadrar y el parser descarta TODO el historial.
+ *
+ * Los grupos son POSICIONALES a propósito: Hermes (el motor de React Native)
+ * no puebla `groups` en los resultados de `String.prototype.matchAll` —solo lo
+ * hace `exec`—, así que leer los grupos con nombre deja TODAS las filas de
+ * movimiento vacías en el dispositivo. Los grupos con nombre están prohibidos
+ * aquí.
  */
 const MOVEMENT_REGEX =
-  /(?:(?<day1>\d{2})\/(?<month1>\d{2})\/(?<year1>\d{4})\s+(?<type1>REINGRESO|ALTA|MODIFICACION DE SALARIO|BAJA)|(?<type2>REINGRESO|ALTA|MODIFICACION DE SALARIO|BAJA)\s+(?<day2>\d{2})\/(?<month2>\d{2})\/(?<year2>\d{4}))\s+\$\s*(?<amount>\d{1,6}(?:[.,]\d{1,4})?)/gi;
+  /(?:(\d{2})\/(\d{2})\/(\d{4})\s+(REINGRESO|ALTA|MODIFICACION DE SALARIO|BAJA)|(REINGRESO|ALTA|MODIFICACION DE SALARIO|BAJA)\s+(\d{2})\/(\d{2})\/(\d{4}))\s+\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/gi;
 
 /** Extrae las filas crudas de la tabla de movimientos en todo el documento. */
 function extractRawMovements(text: string): RegExpMatchArray[] {
@@ -401,14 +407,15 @@ function groupMovementsByEmployer(
     }
     if (employerIdx === -1) continue;
 
-    const m = movement.groups;
-    const day = m?.day1 ?? m?.day2;
-    const month = m?.month1 ?? m?.month2;
-    const year = m?.year1 ?? m?.year2;
-    const amountRaw = m?.amount;
+    // Grupos posicionales (ver MOVEMENT_REGEX): 1-4 = "FECHA TIPO",
+    // 5-8 = "TIPO FECHA", 9 = monto.
+    const day = movement[1] ?? movement[6];
+    const month = movement[2] ?? movement[7];
+    const year = movement[3] ?? movement[8];
+    const amountRaw = movement[9];
     if (!day || !month || !year || !amountRaw) continue;
 
-    const typeRaw = (m?.type1 ?? m?.type2 ?? '').toUpperCase();
+    const typeRaw = (movement[4] ?? movement[5] ?? '').toUpperCase();
     const type: SalaryMovement['type'] = typeRaw.startsWith('REINGRESO')
       ? 'REINGRESO'
       : typeRaw.startsWith('BAJA')

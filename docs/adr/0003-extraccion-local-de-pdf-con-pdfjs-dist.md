@@ -1,8 +1,14 @@
 # ADR-0003 — La extracción de texto del PDF es local, con pdfjs-dist
 
-- **Estado**: Aceptada
+- **Estado**: Sustituida por [ADR-0019](0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md)
 - **Fecha**: 2026-08-01
 - **Ámbito**: `src/services/pdf/`
+
+> **Sustituida.** La decisión de que la extracción fuera local y con `pdfjs-dist` sigue en pie,
+> pero solo se aplicaba a web: en nativo quedó un fallback heurístico que no podía leer
+> documentos comprimidos. [ADR-0019](0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md) extiende
+> `pdfjs-dist` a nativo y elimina ese fallback. Este documento se conserva como registro de la
+> decisión original.
 
 ## Contexto
 

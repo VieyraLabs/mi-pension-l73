@@ -83,7 +83,7 @@ export default function PdfImportScreen() {
 
       {/* Nota OCR */}
       <MessageBanner variant="warning" style={styles.card}>
-        Para PDFs con texto seleccionable: extracción directa. Para PDFs escaneados (imagen): el OCR completo requiere un development build. En Expo Go, se solicita captura manual de los datos del PDF escaneado.
+        Para PDFs con texto seleccionable (como la constancia del IMSS): extracción automática, en el dispositivo. Para PDFs escaneados (imagen) no hay reconocimiento de texto: la app te pide capturar los datos a mano.
       </MessageBanner>
 
       {/* Error */}

@@ -17,7 +17,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 |---|---|---|---|
 | [0001](0001-motor-de-calculo-como-pipeline-de-funciones-puras.md) | El motor de cálculo es un pipeline de funciones puras | Aceptada | 2026-08-01 |
 | [0002](0002-cero-backend-todo-en-el-dispositivo.md) | Cero backend: todo el dato del usuario vive en el dispositivo | Aceptada | 2026-08-01 |
-| [0003](0003-extraccion-local-de-pdf-con-pdfjs-dist.md) | La extracción de texto del PDF es local, con pdfjs-dist | Aceptada | 2026-08-01 |
+| [0003](0003-extraccion-local-de-pdf-con-pdfjs-dist.md) | La extracción de texto del PDF es local, con pdfjs-dist | Sustituida por [0019](0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md) | 2026-08-01 |
 | [0004](0004-validacion-con-zod-como-fuente-unica.md) | Zod es la fuente única de verdad de la validación | Aceptada | 2026-08-01 |
 | [0005](0005-constantes-legales-en-modulos-separados.md) | Las constantes legales viven en módulos separados del código | Aceptada | 2026-08-01 |
 | [0006](0006-el-resultado-es-un-desglose-auditable.md) | El resultado es un desglose auditable de pasos, no un número | Aceptada | 2026-08-01 |
@@ -33,6 +33,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md) | Usar el catálogo oficial de ocupaciones del IMSS para la Modalidad 10 | Aceptada | 2026-10-30 |
 | [0017](0017-el-tag-produce-los-instalables-del-release.md) | El tag produce los instalables del release | Aceptada | 2026-11-03 |
 | [0018](0018-el-nombre-del-proyecto-nativo-deriva-de-expo-name.md) | El nombre del proyecto nativo de iOS se deriva de `expo.name`, y `expo.name` es ASCII | Aceptada | 2026-11-03 |
+| [0019](0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md) | La extracción del PDF usa pdfjs-dist en web y en nativo | Aceptada | 2026-11-03 |
 
 ## Formato
 

@@ -18,9 +18,11 @@ El flujo tiene cuatro etapas:
 2. **Lectura.** En web se toma el contenido del `data:` URL; en nativo se lee el archivo
    con `expo-file-system/legacy`. Antes de leer, se verifica que el archivo exista y no
    mida cero bytes.
-3. **Extracción.** `extractPdfText(base64)` devuelve el texto. En web usa `pdfjs-dist`;
-   en nativo, el fallback heurístico (ver
-   [ADR-0003](../adr/0003-extraccion-local-de-pdf-con-pdfjs-dist.md)).
+3. **Extracción.** `extractPdfText(base64)` devuelve el texto. En las dos plataformas usa
+   `pdfjs-dist`; lo que cambia es dónde corre el worker de pdf.js: en web, un Web Worker
+   real; en nativo, en el hilo principal (ver
+   [ADR-0019](../adr/0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md)). El texto extraído
+   es el mismo en las dos plataformas.
 4. **Parsing y validación.** `PersonalDataParser` extrae nombre, CURP, NSS, semanas
    cotizadas, SBC y movimientos salariales. La pantalla de validación muestra lo
    extraído y deja corregirlo antes de confirmar.
@@ -82,7 +84,7 @@ El flujo tiene cuatro etapas:
 ## Fuera de alcance
 
 - **OCR.** No hay reconocimiento óptico de caracteres: un PDF escaneado requiere captura
-  manual (ver [ADR-0003](../adr/0003-extraccion-local-de-pdf-con-pdfjs-dist.md)).
+  manual (ver [ADR-0019](../adr/0019-extraccion-de-pdf-con-pdfjs-dist-en-nativo.md)).
 - No se importan otros documentos que no sean la constancia de semanas cotizadas.
 - No se guardan los archivos importados: solo el texto derivado y, si el usuario lo
   confirma, la simulación.
@@ -91,7 +93,14 @@ El flujo tiene cuatro etapas:
 
 - `src/__tests__/PdfImporter.test.ts` — selección cancelada, archivo inexistente,
   archivo de 0 bytes, base64 inválido.
-- `src/__tests__/PdfTextExtractor.test.ts` — extracción nativa y su fallback.
+- `src/__tests__/PdfTextExtractor.test.ts` — extracción nativa: texto de un PDF con contenido
+  **comprimido** (el caso que fallaba en iOS) y de uno sin comprimir; cadena vacía ante base64
+  inválido y ante un archivo que no es PDF, sin lanzar; y extracción **sin `ReadableStream`**
+  (el global que React Native no tiene).
+- `src/__tests__/domMatrixPolyfill.test.ts` — la matriz afín 2D que pdf.js necesita al
+  cargarse en Hermes: identidad, composición, inversión y copia.
+- `src/__tests__/structuredClonePolyfill.test.ts` — el clon que pdf.js usa para los mensajes de
+  su worker: objetos, arreglos, binarios, fechas, Map, Set y referencias circulares.
 - `src/__tests__/personalDataParser.test.ts` — extracción de cada campo, incluyendo los
   casos en que el formato del documento cambió (los casos que motivaron los commits
   `683b3b2`, `5d39f60`, `cd5786a`); **la fila de movimiento `ALTA`** (una constancia real
@@ -102,7 +111,7 @@ El flujo tiene cuatro etapas:
   etiqueta; orden de los periodos SBC expuestos y acotación de la lista a la ventana del
   promedio, sin que el promedio cambie; **periodos con SBC efectivo**: el periodo común a
   dos patrones vale la suma de sus SBC y los nombra, y el promedio no cambia por desglosar
-  en periodos.
+  en periodos
 - `src/__tests__/ValidationScreen.test.tsx` — presentación y confirmación de los datos
   extraídos; lista de los periodos SBC CONSIDERADOS en el promedio; el periodo traslapado
   se muestra con el SBC **sumado** y con los dos patrones, y una nota explica la regla.
