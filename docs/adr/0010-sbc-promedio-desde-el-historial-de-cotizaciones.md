@@ -1,6 +1,6 @@
 # ADR-0010 — El SBC promedio se calcula del historial completo de cotizaciones
 
-- **Estado**: Aceptada
+- **Estado**: Aceptada (enmendada por [ADR-0020](0020-la-marca-vigente-es-por-patron-y-el-historial-se-ancla-al-dia-completo.md))
 - **Fecha**: 2026-08-01
 - **Ámbito**: `src/services/pension/history/`
 
@@ -79,3 +79,12 @@ prellenar ese valor.
   justamente lo que la app debe calcular.
 - **Calcular el promedio en el servidor con la constancia completa.** Se descartó por
   [ADR-0002](0002-cero-backend-todo-en-el-dispositivo.md).
+
+## Enmiendas
+
+- **ADR-0020** ([La marca «Vigente» es por patrón y el historial se ancla al día
+  completo](0020-la-marca-vigente-es-por-patron-y-el-historial-se-ancla-al-dia-completo.md))
+  — Enmenda esta decisión sin cambiar su fondo: el historial completo se construye sobre
+  **días completos** (el promedio no depende de la hora del día) y sobre el **fin que
+  cada patrón declara** (un patrón sin fila BAJA ni marca «Vigente» no se estira hasta
+  hoy).

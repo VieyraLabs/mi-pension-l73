@@ -439,7 +439,13 @@ describe('ConstanciaIMSSParser — fila de movimiento ALTA', () => {
 
     expect(result.missingFields).not.toContain('SBC promedio (250 semanas)');
     expect(result.data?.employmentRelations).toHaveLength(2);
-    expect(result.data?.averageSBC).toBe(131.77);
+    // El promedio se calcula sobre días COMPLETOS: la última semana incluye
+    // el 01/09/2026, que ya venía con el SBC de $449.27 (la modificación y
+    // la baja de ese día). Antes ese día se quedaba fuera y el promedio
+    // salía 131.77; ahora la última semana vale
+    // (6 días × 131.77 + 1 día × 449.27) / 7 = 176.98, y sobre 250 semanas
+    // eso son +0.18: 131.95.
+    expect(result.data?.averageSBC).toBe(131.95);
     expect(result.data?.contributionSummary?.selectedWeeks).toBe(250);
     expect(result.data?.contributionSummary?.isComplete).toBe(true);
 
@@ -449,7 +455,9 @@ describe('ConstanciaIMSSParser — fila de movimiento ALTA', () => {
     expect(result.data?.employmentRelations[0]?.startDate.toISOString().split('T')[0]).toBe(
       '1990-06-19',
     );
-    expect(result.data?.contributionSummary?.totalWeeksInHistory).toBe(1889);
+    // La historia llega un día más (termina al final del día de la
+    // referencia), así que hay una semana más.
+    expect(result.data?.contributionSummary?.totalWeeksInHistory).toBe(1890);
   });
 
   test('el monto de la fila ALTA no se confunde con el SBC de encabezado de un patrón', () => {
@@ -527,6 +535,43 @@ describe('ConstanciaIMSSParser — estructura del documento', () => {
     // el documento sí la trae y lo que falló fue nuestra lectura de él.
     expect(result.warnings.some((a) => /no incluye el historial detallado/i.test(a))).toBe(false);
     expect(result.warnings.some((a) => /sí trae el historial de movimientos/i.test(a))).toBe(true);
+  });
+
+  test('el aviso dice QUÉ no cuadra, con los números concretos', () => {
+    const result = ConstanciaIMSSParser.parse(textoConEstructuraRota);
+
+    // "las etiquetas no cuadran entre sí" no dice nada. El aviso tiene que
+    // decir cuántos patrones se encontraron y cuántas altas, para que el caso
+    // se pueda diagnosticar (y corregir) sin adivinar.
+    expect(result.warnings.some((a) => /Encontramos 1 patrón pero 0 fechas de alta/i.test(a))).toBe(true);
+  });
+
+  test('el aviso distingue el patrón al que le falta su monto de encabezado', () => {
+    const sinMonto = TEXTO_DETALLE_COMPLETO.replace('$ 999.0', '');
+
+    const result = ConstanciaIMSSParser.parse(sinMonto);
+
+    expect(
+      result.warnings.some((a) =>
+        /No aparece el monto de Salario Base de Cotización de 1 de los 1 patrón/i.test(a),
+      ),
+    ).toBe(true);
+  });
+
+  test('el aviso distingue el caso en que las filas de movimiento no quedan junto a su patrón', () => {
+    // Con la estructura completa (altas, nombres y montos de encabezado
+    // cuadran) pero con las filas de movimiento dibujadas ANTES de la
+    // etiqueta del patrón, el historial detallado no se puede reconstruir.
+    const textoMovimientosPrimero = TEXTO_DETALLE_COMPLETO.replace(
+      'Nombre del patrón EMPRESA DE PRUEBA SA DE CV\nRegistro Patronal Y584460910\nTipo de movimiento Fecha de movimiento Salario Base\nMODIFICACION DE SALARIO 01/01/2021 $ 148.1\nREINGRESO 01/07/2018 $ 103.23',
+      'Tipo de movimiento Fecha de movimiento Salario Base\nMODIFICACION DE SALARIO 01/01/2021 $ 148.1\nREINGRESO 01/07/2018 $ 103.23\nNombre del patrón EMPRESA DE PRUEBA SA DE CV\nRegistro Patronal Y584460910',
+    );
+
+    const result = ConstanciaIMSSParser.parse(textoMovimientosPrimero);
+
+    expect(
+      result.warnings.some((a) => /No se pudo asociar ninguna fila de movimiento a los patrones/i.test(a)),
+    ).toBe(true);
   });
 
   test('lee el encabezado aunque la etiqueta venga sin acento y sin asterisco', () => {
@@ -812,6 +857,7 @@ REINGRESO 01/01/2018 $ 300.0
 * Valor del último salario base de cotización diario en pesos.
 01/01/2018
 DISTRITO FEDERAL
+Vigente
 Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
 Entidad federativa
 $ 600.0
@@ -955,6 +1001,96 @@ describe('ConstanciaIMSSParser — periodos considerados en el promedio', () => 
     expect(result.data?.contributionSummary?.selectedWeeks).toBe(250);
     expect(result.data?.contributionSummary?.isComplete).toBe(true);
   });
+});
+
+// ─────────────────────────────────────────────
+// La marca "Vigente" es POR PATRÓN
+// ─────────────────────────────────────────────
+//
+// En la constancia, "Vigente" es una celda de cada patrón: los patrones que
+// siguen en vigor la traen y los que cerraron tienen su fila BAJA. Un patrón
+// sin baja y sin su marca no dice cuándo terminó, así que su último periodo
+// no se estira hasta hoy (suponerlo cambiaría el promedio).
+const TEXTO_UN_SOLO_VIGENTE = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+DISTRITO FEDERAL
+Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 300.0
+Nombre del patrón EMPRESA A SA DE CV
+Registro Patronal Y500000001
+Tipo de movimiento Fecha de movimiento Salario Base
+REINGRESO 01/01/2018 $ 300.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2018
+DISTRITO FEDERAL
+Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 600.0
+Nombre del patrón EMPRESA B SA DE CV
+Registro Patronal Y500000002
+Tipo de movimiento Fecha de movimiento Salario Base
+REINGRESO 01/01/2018 $ 600.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:600||`;
+
+describe('ConstanciaIMSSParser — la marca "Vigente" es por patrón', () => {
+  test('un patrón sin baja y sin su marca "Vigente" NO se estira hasta hoy y se avisa', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_UN_SOLO_VIGENTE);
+
+    // El patrón con su marca sí sigue en vigor y aporta su periodo.
+    const periodos = result.data?.sbcPeriods ?? [];
+    expect(periodos.some((periodo) => periodo.employerNames.includes('EMPRESA A SA DE CV'))).toBe(
+      true,
+    );
+    // El que no tiene marca no llega hasta hoy: su periodo no se cuenta.
+    expect(periodos.some((periodo) => periodo.employerNames.includes('EMPRESA B SA DE CV'))).toBe(
+      false,
+    );
+    // Y se dice en voz alta, en vez de suponer que sigue trabajando.
+    expect(
+      result.warnings.some((a) => /no aparecen con baja ni marcados como "Vigente"/i.test(a)),
+    ).toBe(true);
+  });
+
+  test('la marca "Vigente" de un patrón NO habilita a los demás', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_UN_SOLO_VIGENTE);
+
+    // Con el comportamiento anterior (la marca como bandera del documento)
+    // los dos patrones seguían en vigor y el tramo común sumaba $900.
+    const comunes = (result.data?.sbcPeriods ?? []).filter(
+      (periodo) => periodo.employerNames.length === 2,
+    );
+    expect(comunes).toHaveLength(0);
+  });
+
+  test('si el documento trae la marca pero no se puede saber de qué patrón es, se avisa', () => {
+    // La marca aparece al FINAL del documento, después del último patrón:
+    // no hay forma de asociarla a ninguno, así que se aplica al documento
+    // entero y se dice.
+    const textoDesordenado = TEXTO_UN_SOLO_VIGENTE.replace(
+      'Tu historia laboral\nVigente\nDISTRITO FEDERAL',
+      'Tu historia laboral\nDISTRITO FEDERAL',
+    ).replace(
+      '|||Apellido Paterno:PEREZ',
+      'Vigente\n|||Apellido Paterno:PEREZ',
+    );
+
+    const result = ConstanciaIMSSParser.parse(textoDesordenado);
+
+    expect(
+      result.warnings.some((a) => /no se pudo determinar a qué empresas corresponde la marca/i.test(a)),
+    ).toBe(true);
+  });
+
 });
 
 // ─────────────────────────────────────────────

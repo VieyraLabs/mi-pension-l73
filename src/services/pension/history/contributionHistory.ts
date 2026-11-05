@@ -175,6 +175,11 @@ function accumulateSegmentSBC(
  * anclando las semanas a `referenceDate` y contando hacia atrás hasta el
  * inicio del periodo más antiguo.
  *
+ * La historia cubre DÍAS COMPLETOS y termina al FINAL del día de referencia
+ * (exclusivo). Si el fin fuera el INSTANTE de la referencia, la semana más
+ * reciente cambiaría según la hora del día —y con ella el promedio— y el
+ * último día de un periodo (cuya fecha de fin es inclusiva) quedaría fuera.
+ *
  * Las semanas sin cotización se conservan en el historial (marcadas con
  * `contributed: false`) — no se eliminan, porque sirven para el análisis
  * del historial laboral, conservación de derechos y reportes al usuario.
@@ -186,7 +191,8 @@ export function buildContributionHistory(
   if (periods.length === 0) return { weeks: [] };
 
   const earliestStart = Math.min(...periods.map((p) => p.startDate.getTime()));
-  const historyEnd = referenceDate.getTime();
+  // Fin exclusivo: el día siguiente al de la referencia, a medianoche local.
+  const historyEnd = startOfDayPlusDays(referenceDate, 1);
   if (historyEnd <= earliestStart) return { weeks: [] };
 
   const weeks: WeeklyContribution[] = [];

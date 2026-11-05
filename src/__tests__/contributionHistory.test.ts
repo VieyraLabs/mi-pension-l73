@@ -42,12 +42,15 @@ describe('buildContributionHistory', () => {
       REFERENCIA,
     );
 
-    expect(history.weeks).toHaveLength(25);
+    // La historia cubre DÍAS COMPLETOS y termina al final del día de la
+    // referencia: son 26 semanas, no 25. La semana más reciente queda con 6
+    // días (el 01/01/2026 completo) y la más antigua, completa.
+    expect(history.weeks).toHaveLength(26);
     // Orden cronológico ascendente: la más antigua primero.
-    expect(history.weeks[0]!.date.getTime()).toBeLessThan(history.weeks[24]!.date.getTime());
-    expect(getContributedWeeks(history)).toHaveLength(20);
+    expect(history.weeks[0]!.date.getTime()).toBeLessThan(history.weeks[25]!.date.getTime());
+    expect(getContributedWeeks(history)).toHaveLength(22);
     // Los huecos se conservan en el historial, no se eliminan.
-    expect(history.weeks.filter((w) => !w.contributed)).toHaveLength(5);
+    expect(history.weeks.filter((w) => !w.contributed)).toHaveLength(4);
   });
 
   test('devuelve un historial vacío cuando no hay periodos', () => {
@@ -95,7 +98,11 @@ describe('últimas 250 semanas cotizadas (Art. 167 LSS 1973)', () => {
     const history = buildContributionHistory([periodoPorSemanas(0, 300, 500)], REFERENCIA);
     const summary = calculateContributionSummary(history)!;
 
-    expect(summary.contributedWeeks).toBe(300);
+    // La historia llega un día más (termina al final del día de la
+    // referencia), así que la semana más antigua queda a medio cubrir y
+    // cuenta: 301 semanas cotizadas. Las 250 seleccionadas y el promedio no
+    // cambian.
+    expect(summary.contributedWeeks).toBe(301);
     expect(summary.selectedWeeks).toBe(250);
     expect(summary.skippedWeeks).toBe(0);
     expect(summary.isComplete).toBe(true);
@@ -111,15 +118,19 @@ describe('últimas 250 semanas cotizadas (Art. 167 LSS 1973)', () => {
     );
     const summary = calculateContributionSummary(history)!;
 
-    expect(summary.skippedWeeks).toBe(52);
-    expect(summary.contributedWeeks).toBe(400);
+    // La ventana se desplaza un día (la historia termina al final del día de
+    // la referencia), así que el hueco de 52 semanas queda con 51 semanas
+    // completas dentro de la ventana seleccionada, y hay dos semanas más
+    // cotizadas a los extremos (las parciales de los bordes).
+    expect(summary.skippedWeeks).toBe(51);
+    expect(summary.contributedWeeks).toBe(402);
     expect(summary.selectedWeeks).toBe(250);
     expect(summary.isComplete).toBe(true);
 
-    // Las 250 seleccionadas son 100 semanas a $900 + 150 semanas a $100
-    // (las 52 sin cotizar NO entran, y el recorrido continuó más atrás).
-    // (100 × 900 + 150 × 100) / 250 = 420
-    expect(summary.averageSalary).toBe(420);
+    // Las 250 seleccionadas son 101 semanas a $900 + 149 semanas a $100
+    // (las 51 sin cotizar NO entran, y el recorrido continuó más atrás).
+    // (101 × 900 + 149 × 100) / 250 = 423.2
+    expect(summary.averageSalary).toBe(423.2);
   });
 
   test('no cuenta huecos antiguos fuera del rango de semanas seleccionado', () => {
@@ -175,8 +186,8 @@ describe('últimas 250 semanas cotizadas (Art. 167 LSS 1973)', () => {
     const history = buildContributionHistory([periodoPorSemanas(0, 120, 300)], REFERENCIA);
     const summary = calculateContributionSummary(history)!;
 
-    expect(summary.contributedWeeks).toBe(120);
-    expect(summary.selectedWeeks).toBe(120);
+    expect(summary.contributedWeeks).toBe(121);
+    expect(summary.selectedWeeks).toBe(121);
     expect(summary.isComplete).toBe(false);
     expect(summary.averageSalary).toBe(300);
   });
@@ -186,12 +197,27 @@ describe('últimas 250 semanas cotizadas (Art. 167 LSS 1973)', () => {
     const summary = calculateContributionSummary(history)!;
 
     expect(summary.firstWeekUsed.getTime()).toBeLessThan(summary.lastWeekUsed.getTime());
-    expect(summary.totalWeeksInHistory).toBe(300);
+    // La historia llega un día más (termina al final del día de la
+    // referencia): 301 semanas, la última a medio cubrir.
+    expect(summary.totalWeeksInHistory).toBe(301);
   });
 
   test('devuelve null cuando el historial no tiene ninguna semana cotizada', () => {
     expect(calculateContributionSummary({ weeks: [] })).toBeNull();
     expect(summarizeLastContributedWeeks([], REFERENCIA)).toBeNull();
+  });
+
+  test('el promedio NO depende de la HORA del día de la referencia', () => {
+    // El ancla de la ventana es el DÍA, no el instante: la misma constancia
+    // importada a las 00:05 y a las 23:55 tiene que dar el mismo promedio.
+    const periodos = [periodoPorSemanas(0, 100, 900), periodoPorSemanas(152, 452, 100)];
+
+    const madrugada = summarizeLastContributedWeeks(periodos, new Date(2026, 0, 1, 0, 5))!;
+    const noche = summarizeLastContributedWeeks(periodos, new Date(2026, 0, 1, 23, 55))!;
+
+    expect(noche.averageSalary).toBe(madrugada.averageSalary);
+    expect(noche.selectedWeeks).toBe(madrugada.selectedWeeks);
+    expect(noche.firstWeekUsed.getTime()).toBe(madrugada.firstWeekUsed.getTime());
   });
 });
 
@@ -222,10 +248,12 @@ describe('selectPeriodsInAverageWindow', () => {
       1,
     )!;
 
-    // La semana usada arranca el 8 de enero a las 13:03:06 (hereda la hora
-    // de la referencia) y el periodo termina a medianoche de ese mismo día.
-    expect(summary.firstWeekUsed.getDate()).toBe(8);
-    expect(summary.firstWeekUsed.getHours()).toBe(13);
+    // La historia se arma sobre DÍAS COMPLETOS: las semanas ya no heredan la
+    // hora de la referencia (13:03:06), arrancan a medianoche. Por eso la
+    // semana usada es la del 2 de enero (la que cubre el 8 de enero) y el
+    // periodo, que termina a medianoche de ese mismo día, sí aporta días.
+    expect(summary.firstWeekUsed.getDate()).toBe(2);
+    expect(summary.firstWeekUsed.getHours()).toBe(0);
     // El SBC del periodo SÍ cuenta en el promedio.
     expect(summary.averageSalary).toBe(300);
 
@@ -249,9 +277,13 @@ describe('patrones simultáneos', () => {
     )!;
 
     expect(summary.selectedWeeks).toBe(250);
-    expect(summary.contributedWeeks).toBe(250);
-    // (200 × 100 + 50 × 600) / 250 = 200
-    expect(summary.averageSalary).toBe(200);
+    // 251: la historia llega un día más (termina al final del día de la
+    // referencia) y la semana más antigua queda a medio cubrir.
+    expect(summary.contributedWeeks).toBe(251);
+    // 50 semanas a $600 (el traslape), 199 a $100 y una a $172.50: la semana
+    // donde empieza el segundo empleo cae a un día del borde, así que ese
+    // día ya suma los dos salarios. (50 × 600 + 199 × 100 + 172.50) / 250
+    expect(summary.averageSalary).toBe(200.29);
   });
 
   test('traslape parcial: el segundo empleo suma su salario y NO duplica las semanas', () => {
@@ -269,21 +301,24 @@ describe('patrones simultáneos', () => {
     // Con solo el patrón A el promedio sería $100: el segundo empleo pesa.
     expect(soloA.averageSalary).toBe(100);
 
-    // La semana del tramo solapado vale la suma de los dos SBC.
+    // La semana del tramo solapado vale la suma de los dos SBC. Se busca la
+    // semana que COBRA ese punto, no una fecha exacta: la rejilla de semanas
+    // se arma sobre días completos.
     const history = buildContributionHistory(periodos, REFERENCIA);
+    const punto = REFERENCIA.getTime() - 75 * MS_PER_WEEK;
     const semanaSolapada = getContributedWeeks(history).find(
-      (w) => w.date.getTime() === REFERENCIA.getTime() - 75 * MS_PER_WEEK,
+      (w) => w.date.getTime() <= punto && w.date.getTime() + MS_PER_WEEK > punto,
     );
     expect(semanaSolapada?.salaryBaseContribution).toBe(600);
 
     // (b) Las semanas NO se duplican: tener dos empleos no genera dos
     // semanas cotizadas.
     expect(conB.selectedWeeks).toBe(250);
-    expect(conB.contributedWeeks).toBe(250);
+    expect(conB.contributedWeeks).toBe(251);
 
     // (c) El historial no crece por tener dos patrones simultáneos.
     expect(conB.totalWeeksInHistory).toBe(soloA.totalWeeksInHistory);
-    expect(conB.totalWeeksInHistory).toBe(250);
+    expect(conB.totalWeeksInHistory).toBe(251);
   });
 });
 
@@ -498,8 +533,11 @@ describe('buildContributionSegments', () => {
 
     const summary = summarizeLastContributedWeeks(periodos, new Date(2025, 0, 1))!;
 
-    expect(summary.contributedWeeks).toBe(51);
-    expect(summary.averageSalary).toBe(129.41);
+    // La historia llega un día más (termina al final del día de la
+    // referencia): 52 semanas, y la primera queda a medio cubrir (solo con
+    // EMPRESA A, a $100). (49 × 100 + 3 × 600) / 52 = 128.85
+    expect(summary.contributedWeeks).toBe(52);
+    expect(summary.averageSalary).toBe(128.85);
 
     // El tramo común muestra exactamente la misma suma que el motor promedia.
     const tramos = buildContributionSegments(periodos);

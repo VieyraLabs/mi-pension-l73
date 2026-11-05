@@ -46,6 +46,22 @@ se muestra es el número que se promedia.
   huecos laborales la equivalencia sería falsa, y el texto de captura del SBC solo dice
   «tus últimas 250 semanas cotizadas» y explica que el promedio sale de las semanas que sí
   cotizaste.
+- **El historial cubre DÍAS COMPLETOS y no depende de la hora del día.** El fin del
+  historial es el día siguiente al de la fecha de referencia, a medianoche local, y el
+  inicio de cada semana se ancla a medianoche. La fecha de referencia es un instante
+  (tiene hora), pero el cálculo solo usa su día: el mismo documento da el mismo promedio
+  a las 00:05 que a las 23:55. También por eso el último día de un periodo (cuya fecha de
+  fin es inclusiva) queda dentro del historial.
+- **La fecha de referencia es «hoy» solo si el documento dice que algo sigue en vigor.**
+  Si ningún patrón está vigente, la referencia es la fecha de baja más reciente que el
+  documento registra: el historial de quien dejó de cotizar hace tiempo no llega hasta
+  hoy. El desglose dice cuál de las dos se usó.
+- **El fin de cada patrón es el que el documento declara de ese patrón** (ver
+  [ADR-0020](../adr/0020-la-marca-vigente-es-por-patron-y-el-historial-se-ancla-al-dia-completo.md)):
+  una fila BAJA lo cierra, la marca «Vigente» (que es una celda **por patrón**, no una
+  bandera del documento) lo mantiene en vigor, y un patrón sin ninguno de los dos **no
+  dice cuándo terminó**: su último periodo no se estira hasta hoy, se omite, y se avisa
+  cuántos patrones quedaron así.
 - **Los empleos simultáneos se suman.** Si en un día hay dos patrones vigentes, el SBC de
   ese día es la suma de ambos, porque el asegurado cotizó a los dos. Pero **la semana se
   cuenta una sola vez**: tener dos empleos no genera dos semanas cotizadas.
@@ -102,11 +118,17 @@ se muestra es el número que se promedia.
   casos de `buildContributionSegments`: un patrón con dos cambios de salario produce dos
   periodos, dos patrones traslapados producen un periodo común con el SBC **sumado** y
   ambos nombres, dos patrones no traslapados producen dos periodos, y **el promedio no
-  cambia** al desglosar en periodos.
+  cambia** al desglosar en periodos; **el promedio no depende de la hora del día** de la
+  referencia, y un periodo que termina a medianoche el mismo día de la primera semana
+  usada sí aporta días.
 - `src/__tests__/personalDataParser.test.ts` — orden de los periodos SBC expuestos (de más
   reciente a más antigua) y su independencia respecto del SBC promedio calculado; acotación
   de los periodos expuestos a la ventana del promedio, sin que el promedio cambie; el
-  periodo común a dos patrones se expone con el SBC sumado y con los dos nombres.
+  periodo común a dos patrones se expone con el SBC sumado y con los dos nombres; **la
+  marca «Vigente» es por patrón**: un patrón sin baja y sin su marca no se estira hasta
+  hoy y se avisa, la marca de un patrón no habilita a los demás, y una marca que no se
+  puede atribuir a ningún patrón se avisa; el parser funciona aunque `matchAll` no
+  devuelva `groups` (así funciona en Hermes).
 - `src/__tests__/ValidationScreen.test.tsx` — orden en que se renderiza la lista de
   periodos en «Cómo se calculó tu SBC promedio», y el recuento de periodos CONSIDERADOS
   que anuncia el título; el periodo traslapado se muestra con el SBC **sumado** y con los

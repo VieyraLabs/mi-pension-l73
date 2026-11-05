@@ -42,6 +42,13 @@ arranca, la app se queda sin texto) o el parche
 
 ### 3. Comparar el texto extraído con el esperado
 
+**El aviso de la app dice qué no cuadra.** Cuando la estructura del documento no se entiende,
+el aviso trae los números concretos ("Encontramos 9 patrones pero 7 fechas de alta", "No
+aparece el monto de Salario Base de Cotización de 2 de los 9 patrones", "No se pudo asociar
+ninguna fila de movimiento a los patrones"). Con esos números ya se sabe qué revisar. En
+desarrollo, la consola además registra el detalle: `console.warn('[PersonalDataParser] …')`
+con los conteos y el número de caracteres extraídos.
+
 Leer el texto crudo y localizar el campo que falla. Los casos que ya se han resuelto
 documentan el patrón:
 
@@ -127,3 +134,19 @@ distinta a UTF-8. Ajustar la decodificación en `PdfTextExtractor`.
 
 **El texto sale bien pero los campos no.** El problema está en el parser, no en la
 extracción. Volver al paso 3 y comparar el texto crudo con los patrones.
+
+**El documento SÍ trae la tabla de movimientos pero el historial no se reconstruye.** Ojo
+con dos cosas que se parecen y no son lo mismo:
+
+- La atribución de las filas de movimiento a cada patrón se hace por posición en el texto
+  extraído (el orden de dibujado del PDF). Si una fila queda lejos de su patrón, no se
+  le atribuye a ninguno: el aviso lo dice ("No se pudo asociar ninguna fila de movimiento a
+  los patrones") y la consola registra los conteos.
+- La marca **«Vigente» es una celda por patrón** (ver
+  [ADR-0020](../adr/0020-la-marca-vigente-es-por-patron-y-el-historial-se-ancla-al-dia-completo.md)):
+  para que se atribuya, tiene que aparecer en el texto **entre** el patrón anterior y
+  este. Si el PDF la dibuja al final del documento, no se puede atribuir a ninguno: la app
+  la aplica al documento completo y lo avisa ("No se pudo determinar a qué empresas
+  corresponde la marca"). Si la marca falta en un patrón que no tiene fila BAJA, ese
+  patrón no dice cuándo terminó: su último periodo se omite (no se estira hasta hoy) y se
+  avisa cuántos patrones quedaron así.

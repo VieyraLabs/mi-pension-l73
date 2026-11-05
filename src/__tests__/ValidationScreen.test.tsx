@@ -209,6 +209,7 @@ REINGRESO 01/01/2018 $ 300.0
 * Valor del último salario base de cotización diario en pesos.
 01/01/2018
 DISTRITO FEDERAL
+Vigente
 Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
 Entidad federativa
 $ 600.0

@@ -56,9 +56,21 @@ El flujo tiene cuatro etapas:
 - **El parser abandona la reconstrucción solo cuando la ESTRUCTURA no cuadra** (faltan o
   sobran altas, nombres o montos de encabezado). Ahí no se adivina a qué patrón pertenece
   cada dato: se deja el SBC promedio en blanco y se pide la captura manual.
+- **La marca «Vigente» es una celda POR PATRÓN, no una bandera del documento.** Cada
+  patrón dice si sigue en vigor: la marca de un patrón es la última que aparece entre el
+  patrón anterior y este. Un patrón con fila BAJA terminó en esa fecha; uno con su marca
+  «Vigente» y sin BAJA sigue en vigor; uno **sin BAJA y sin su marca** no dice cuándo
+  terminó, así que su último periodo **no se estira hasta hoy** (suponerlo cambiaría el
+  promedio): se omite y se avisa cuántos patrones quedaron así. Si la marca viene suelta
+  y no se puede atribuir a ningún patrón, se aplica al documento completo y **se dice**,
+  en vez de adivinar a qué patrón pertenece (ver
+  [ADR-0020](../adr/0020-la-marca-vigente-es-por-patron-y-el-historial-se-ancla-al-dia-completo.md)).
 - **El aviso distingue los dos fallos.** Cuando el documento **no** trae la tabla de
   movimientos, se dice que no la trae y se pide la constancia correcta. Cuando **sí** la
   trae pero no se pudo reconstruir, se dice eso: descargar otro documento no lo arregla.
+  Cuando la estructura no cuadra, el aviso dice **qué** no cuadra y con qué números
+  (cuántos patrones, cuántas altas, cuántas etiquetas de SBC, cuántos patrones sin monto):
+  "las etiquetas no cuadran entre sí" no es un diagnóstico, es una guess.
 - **Nada se descarta al confirmar.** Los datos importados que el usuario corrige se
   conservan: el flujo `Validación → Confirmar` propaga el input editado
   (commit `6ec5784`).
@@ -111,7 +123,10 @@ El flujo tiene cuatro etapas:
   etiqueta; orden de los periodos SBC expuestos y acotación de la lista a la ventana del
   promedio, sin que el promedio cambie; **periodos con SBC efectivo**: el periodo común a
   dos patrones vale la suma de sus SBC y los nombra, y el promedio no cambia por desglosar
-  en periodos
+  en periodos; **la marca «Vigente» es por patrón**: un patrón sin baja y sin su marca no
+  se estira hasta hoy y se avisa, la marca de un patrón no habilita a los demás, y una
+  marca que no se puede atribuir a ningún patrón se avisa; el parser funciona aunque
+  `matchAll` no devuelva `groups` (así funciona en Hermes).
 - `src/__tests__/ValidationScreen.test.tsx` — presentación y confirmación de los datos
   extraídos; lista de los periodos SBC CONSIDERADOS en el promedio; el periodo traslapado
   se muestra con el SBC **sumado** y con los dos patrones, y una nota explica la regla.

@@ -164,12 +164,9 @@ export function calculateProjectedSBC(params: {
     });
   }
 
-  // Contribution history treats its reference as the exclusive end of its
-  // final week; add one calendar day to include the retirement date itself.
-  const history: ContributionHistory = buildContributionHistory(
-    periods,
-    addLocalDays(retirementDay, 1),
-  );
+  // La historia cubre DÍAS COMPLETOS y termina al final del día de
+  // referencia, así que el día del retiro ya queda dentro sin compensar.
+  const history: ContributionHistory = buildContributionHistory(periods, retirementDay);
   const usedWeeks = getLastContributionWeeks(history, count);
   const totalWeeks = usedWeeks.length;
 

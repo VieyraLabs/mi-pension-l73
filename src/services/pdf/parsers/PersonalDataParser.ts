@@ -145,6 +145,22 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
           'así que no se incluyó en el cálculo del SBC promedio. Verifica el promedio manualmente.',
       );
     }
+    if (workHistoryResult.vigenteFallback) {
+      warnings.push(
+        'No se pudo determinar a qué empresas corresponde la marca "Vigente" de la constancia, ' +
+          'así que se aplicó a todo el documento. Verifica el SBC promedio.',
+      );
+    }
+    if (workHistoryResult.patternsWithUnknownEnd > 0) {
+      const cuantos = workHistoryResult.patternsWithUnknownEnd;
+      warnings.push(
+        `No se pudo determinar cuándo terminó${cuantos === 1 ? '' : 'ron'} ${withCount(
+          cuantos,
+          'patrón',
+          'patrones',
+        )}: no aparecen con baja ni marcados como "Vigente", así que su último periodo no se pudo reconstruir con certeza. Verifica el SBC promedio manualmente.`,
+      );
+    }
     if (workHistoryResult.unattributedAmounts > 0) {
       // Montos que no sabemos a qué patrón ni a qué movimiento pertenecen:
       // casi siempre es una fila de un tipo de movimiento que el parser aún
@@ -213,8 +229,8 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
         // un PDF que sí servía.
         warnings.push(
           'El documento sí trae el historial de movimientos salariales, pero no pudimos reconstruirlo: ' +
-            'las etiquetas de cada patrón no cuadran entre sí. ' +
-            'Revisa el SBC promedio o complétalo manualmente.',
+            (workHistoryResult.structureMismatch ?? 'las etiquetas de cada patrón no cuadran entre sí') +
+            '. Revisa el SBC promedio o complétalo manualmente.',
         );
       } else {
         warnings.push(
@@ -341,6 +357,60 @@ interface WorkHistoryParseResult {
    * movimiento que el parser todavía no conoce.
    */
   unattributedAmounts: number;
+  /**
+   * Por qué no se pudo reconstruir el historial, con los números concretos
+   * (cuántos patrones, cuántas altas, cuántas etiquetas de SBC). `null` si la
+   * estructura sí cuadró y el problema fue otro.
+   */
+  structureMismatch: string | null;
+  /**
+   * Patrones cuyo fin no se pudo determinar: tienen movimientos pero ni fila
+   * BAJA ni marca "Vigente". Su último periodo no entra al promedio.
+   */
+  patternsWithUnknownEnd: number;
+  /**
+   * El documento trae la marca "Vigente" pero el orden de dibujado no
+   * permitió asociarla a ningún patrón: se aplicó como bandera del documento.
+   */
+  vigenteFallback: boolean;
+}
+
+/** "1 patrón" / "3 patrones": el número con su sustantivo bien concordado. */
+function withCount(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+/**
+ * Describe en una frase qué parte de la estructura no cuadró. El aviso al
+ * usuario tiene que decir QUÉ no cuadra: "las etiquetas no cuadran entre sí" no
+ * ayuda a nadie, y sin esto no hay forma de saber si al documento le falta
+ * una fecha de alta, le sobra una etiqueta de SBC o a un patrón le falta su
+ * monto.
+ */
+function describeStructureMismatch(
+  patternCount: number,
+  hireDateCount: number,
+  sbcLabelCount: number,
+  missingAmountCount: number,
+): string {
+  if (patternCount === 0) {
+    return 'No se encontró ningún patrón (empresa) en el documento.';
+  }
+  if (hireDateCount !== patternCount) {
+    return `Encontramos ${withCount(patternCount, 'patrón', 'patrones')} pero ${withCount(
+      hireDateCount,
+      'fecha de alta',
+      'fechas de alta',
+    )}.`;
+  }
+  if (sbcLabelCount !== patternCount) {
+    return `Encontramos ${withCount(patternCount, 'patrón', 'patrones')} pero ${withCount(
+      sbcLabelCount,
+      'etiqueta de Salario Base de Cotización',
+      'etiquetas de Salario Base de Cotización',
+    )}.`;
+  }
+  return `No aparece el monto de Salario Base de Cotización de ${missingAmountCount} de los ${patternCount} ${patternCount === 1 ? 'patrón' : 'patrones'}.`;
 }
 
 interface SalaryMovement {
@@ -435,6 +505,37 @@ function groupMovementsByEmployer(
   }
 
   return groupsByEmployer;
+}
+
+/**
+ * Patrones marcados como "Vigente" en la constancia.
+ *
+ * "Vigente" es una celda POR PATRÓN, no una bandera del documento: en la
+ * constancia aparece al inicio del bloque de cada patrón (antes de su "Salario
+ * Base de Cotización"), así que la marca de un patrón es la última que
+ * aparece entre el patrón anterior y este.
+ *
+ * @returns los índices de los patrones que tienen su propia marca.
+ */
+function findVigentePatterns(
+  text: string,
+  employers: RegExpMatchArray[],
+): Set<number> {
+  const marks = [...text.matchAll(/\bvigente\b/gi)];
+  const vigente = new Set<number>();
+  if (marks.length === 0) return vigente;
+
+  employers.forEach((employer, index) => {
+    const employerIndex = employer.index;
+    if (employerIndex === undefined) return;
+    const previousEnd = index === 0 ? -1 : employers[index - 1]?.index ?? -1;
+    const isVigente = marks.some(
+      (mark) => mark.index !== undefined && mark.index > previousEnd && mark.index < employerIndex,
+    );
+    if (isVigente) vigente.add(index);
+  });
+
+  return vigente;
 }
 
 /**
@@ -582,10 +683,14 @@ function countUnattributedAmounts(
  * dibujado del PDF). Se toman esas listas en orden y se emparejan por
  * posición; en la aproximación, la fecha de baja de cada patrón (salvo el
  * más reciente) se infiere como el día anterior al alta del patrón
- * siguiente, asumiendo que no hubo huecos entre empleos. El patrón más
- * reciente se considera vigente (baja = hoy) solo si el texto contiene la
- * palabra "Vigente"; si no, se omite del historial reconstruido por no
- * poder determinar cuándo terminó.
+ * siguiente, asumiendo que no hubo huecos entre empleos.
+ *
+ * "Vigente" es una celda POR PATRÓN, no una bandera del documento: cada
+ * patrón dice si sigue en vigor. Un patrón sin fila BAJA y sin su marca
+ * "Vigente" no dice cuándo terminó, así que su último periodo NO se estira
+ * hasta hoy (suponerlo cambiaría el promedio): se omite y se avisa. El
+ * patrón más reciente sin BAJA ni marca se omite entero del historial
+ * reconstruido, por no poder determinar cuándo terminó.
  */
 function extractWorkHistory(text: string): WorkHistoryParseResult {
   // "Fecha de alta" puede venir seguido directamente de su fecha, o de la
@@ -608,17 +713,28 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
   const hasMovementTable = /tipo\s+de\s+movimiento/i.test(text);
 
   const count = employers.length;
+  const missingHeaderAmounts = sbcAmounts.filter((amount) => amount === null).length;
   if (
     count === 0 ||
     hireDates.length !== count ||
     sbcAmounts.length !== count ||
-    sbcAmounts.some((amount) => amount === null)
+    missingHeaderAmounts > 0
   ) {
     // La ESTRUCTURA no cuadra: el documento no tiene la forma que el parser
     // entiende (faltan o sobran altas, nombres o montos de encabezado). Se
     // abandona la reconstrucción en vez de adivinar a qué patrón pertenece
     // cada dato. Un monto suelto que no sabemos a qué pertenece NO dispara
     // este abandono: se reporta aparte.
+    console.warn(
+      '[PersonalDataParser] No se pudo reconstruir el historial del SBC promedio.',
+      {
+        patrones: count,
+        fechasDeAlta: hireDates.length,
+        etiquetasDeSbc: sbcAmounts.length,
+        patronesSinMonto: missingHeaderAmounts,
+        caracteresExtraidos: text.length,
+      },
+    );
     return {
       relations: [],
       periods: [],
@@ -629,11 +745,26 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
       usesPastReferenceDate: false,
       hasMovementTable,
       unattributedAmounts,
+      patternsWithUnknownEnd: 0,
+      vigenteFallback: false,
+      structureMismatch: describeStructureMismatch(
+        count,
+        hireDates.length,
+        sbcAmounts.length,
+        missingHeaderAmounts,
+      ),
     };
   }
 
   const movementsByEmployer = groupMovementsByEmployer(rawMovements, employers);
-  const isCurrentlyActiveGlobal = /\bvigente\b/i.test(text);
+  const vigentePatterns = findVigentePatterns(text, employers);
+  const hasVigenteMark = /\bvigente\b/i.test(text);
+  // Si el documento trae la marca pero el orden de dibujado no permite
+  // asociarla a ningún patrón, se conserva el comportamiento anterior (la
+  // marca aplica al documento entero) y se avisa: adivinar a qué patrón
+  // pertenece la marca sería inventar.
+  const vigenteFallback = hasVigenteMark && vigentePatterns.size === 0;
+  const anyVigente = hasVigenteMark;
   const today = new Date();
   const hireDateOf = (m: RegExpMatchArray) =>
     new Date(parseInt(m[3] as string, 10), parseInt(m[2] as string, 10) - 1, parseInt(m[1] as string, 10));
@@ -642,6 +773,10 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
   const periods: SBCPeriod[] = [];
   let omittedMostRecent = false;
   let usedDetailedData = false;
+  /** Patrones cuyo fin no se puede determinar (sin BAJA y sin "Vigente"). */
+  let patternsWithUnknownEnd = 0;
+  /** Filas de movimiento que sí se pudieron asociar a un patrón. */
+  let associatedMovements = 0;
 
   for (let i = 0; i < count; i++) {
     const hireMatch = hireDates[i];
@@ -650,21 +785,25 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     if (!hireMatch || sbcHeader === null || sbcHeader === undefined || !employerMatch) continue;
 
     const hireDate = hireDateOf(hireMatch);
-    const isActive = i === 0 && isCurrentlyActiveGlobal;
+    // "Vigente" es una celda POR PATRÓN, no una bandera del documento: es el
+    // propio patrón el que dice si sigue vigente.
+    const isVigente = vigenteFallback ? hasVigenteMark : vigentePatterns.has(i);
+    const isActive = isVigente;
     const employerName =
       employerMatch[1]?.split(/\s+(?=registro\s+patronal\b|registro\s+patr\s*$|tipo\s+de\s+movimiento\b|fecha\s+de\s+movimi)/i)[0]?.trim() ?? '';
 
     const employerMovements = movementsByEmployer[i] ?? [];
-    // Un patrón cuya tabla de movimientos NO registra BAJA sigue en vigor: la
-    // constancia no dice que terminó. Si además el documento marca "Vigente",
-    // ese empleo continúa hasta hoy y puede solaparse con otro patrón
-    // (empleos simultáneos), así que el tramo común debe sumar los salarios de
-    // ambos. Antes solo el primer patrón del documento podía extenderse hasta
-    // hoy: un patrón simultáneo anterior se truncaba justo antes del alta del
-    // siguiente, el traslape se perdía y el periodo más reciente mostraba un
-    // solo salario en vez de la suma de los N patrones.
-    const hasTerminationRow = employerMovements.some((m) => m.type === 'BAJA');
-    const isInForce = isCurrentlyActiveGlobal && (i === 0 || !hasTerminationRow);
+    associatedMovements += employerMovements.length;
+    // Un patrón vigente (con su marca "Vigente" y sin fila BAJA) continúa
+    // hasta hoy y puede solaparse con otro patrón (empleos simultáneos), así
+    // que el tramo común debe sumar los salarios de ambos. Un patrón SIN fila
+    // BAJA y SIN marca "Vigente" no dice cuándo terminó: no se estira hasta
+    // hoy (suponerlo cambiaría el promedio) y su último periodo se omite.
+    const terminationRow = employerMovements.find((m) => m.type === 'BAJA');
+    const isInForce = isVigente && !terminationRow;
+    // El fin del patrón es desconocido cuando no hay fila BAJA y el patrón no
+    // está vigente. En ese caso su último periodo no se puede reconstruir.
+    const endIsUnknown = !terminationRow && !isVigente;
 
     const detailedPeriods = periodsFromMovements(employerMovements, isInForce, today);
 
@@ -675,10 +814,20 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
       usedDetailedData = true;
       employerPeriods = detailedPeriods;
       terminationDate = detailedPeriods[detailedPeriods.length - 1]?.endDate;
+      // El documento sí trajo movimientos de este patrón, pero su último
+      // periodo no se pudo cerrar (sin BAJA y sin "Vigente"): se cuenta para
+      // avisar en vez de suponer que sigue trabajando.
+      if (endIsUnknown) patternsWithUnknownEnd += 1;
     } else {
-      if (isActive) {
+      if (terminationRow) {
+        // El documento dice cuándo terminó el patrón: esa fecha manda.
+        terminationDate = terminationRow.date;
+      } else if (isActive) {
         terminationDate = today;
       } else if (i === 0) {
+        // El empleo más reciente sin fila BAJA ni marca "Vigente": no se sabe
+        // cuándo terminó, así que se deja fuera del promedio en vez de
+        // suponer que sigue vigente.
         omittedMostRecent = true;
         continue;
       } else {
@@ -688,6 +837,11 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
       }
       if (isNaN(sbcHeader) || sbcHeader <= 0) continue;
       employerPeriods = [{ startDate: hireDate, endDate: terminationDate, sbc: sbcHeader }];
+      // El patrón traía movimientos en el documento pero su último periodo no
+      // se pudo reconstruir: se cuenta para avisar. Si el patrón NO traía
+      // movimientos, el aviso es el del documento completo (sin historial
+      // detallado), no uno por patrón.
+      if (endIsUnknown && employerMovements.length > 0) patternsWithUnknownEnd += 1;
     }
 
     // Cada periodo se etiqueta con el patrón al que pertenece: es lo que
@@ -718,15 +872,30 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
   // intervalos trabaja con las fronteras de cada periodo.
   periods.sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
 
-  // Si el patrón más reciente no está "Vigente", el historial conocido
-  // termina en la fecha de baja más reciente, no en "hoy" — de lo
-  // contrario, la ventana de las últimas 250 semanas nunca tocaría ningún
-  // periodo real para alguien que dejó de cotizar hace tiempo.
+  // Si ningún patrón está "Vigente", el historial conocido termina en la fecha
+  // de baja más reciente, no en "hoy" — de lo contrario, la ventana de las
+  // últimas 250 semanas nunca tocaría ningún periodo real para alguien que
+  // dejó de cotizar hace tiempo.
   const mostRecentEnd = periods.reduce<Date | undefined>(
     (latest, p) => (!latest || p.endDate.getTime() > latest.getTime() ? p.endDate : latest),
     undefined,
   );
-  const referenceDate = isCurrentlyActiveGlobal || !mostRecentEnd ? today : mostRecentEnd;
+  const referenceDate = anyVigente || !mostRecentEnd ? today : mostRecentEnd;
+
+  if (!usedDetailedData) {
+    // La estructura cuadró pero ningún patrón quedó con su historial: las
+    // filas de movimiento no están junto a su patrón en el texto extraído.
+    // Se registran los números para poder diagnosticarlo.
+    console.warn(
+      '[PersonalDataParser] Las filas de movimiento no se asociaron a ningún patrón.',
+      {
+        patrones: count,
+        filasDeMovimiento: rawMovements.length,
+        movimientosAsociados: movementsByEmployer.reduce((total, group) => total + group.length, 0),
+        caracteresExtraidos: text.length,
+      },
+    );
+  }
 
   return {
     relations,
@@ -738,6 +907,13 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     usesPastReferenceDate: referenceDate !== today,
     hasMovementTable,
     unattributedAmounts,
+    patternsWithUnknownEnd,
+    vigenteFallback,
+    structureMismatch: usedDetailedData
+      ? null
+      : associatedMovements > 0
+        ? 'Las filas de movimiento sí se asociaron a los patrones, pero no se pudo completar ningún periodo: a los patrones que no traen fila de baja ni la marca "Vigente" no se les puede determinar cuándo termina su último periodo.'
+        : 'No se pudo asociar ninguna fila de movimiento a los patrones: las fechas y los montos de los cambios salariales no quedaron junto a ningún patrón.',
   };
 }
 
