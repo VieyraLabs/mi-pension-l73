@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen';
@@ -49,54 +50,59 @@ function MainTabs() {
   const theme = useTheme();
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.onPrimaryContainer,
-        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
-        tabBarActiveBackgroundColor: theme.colors.primaryContainer,
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
-        tabBarItemStyle: { borderRadius: 16, marginVertical: 6 },
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.outlineVariant,
-          height: 64,
-          paddingTop: 6,
-          paddingBottom: 6,
-        },
-      }}
+    <SafeAreaView
+      edges={['top']}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
     >
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardScreen}
-        options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home" color={color} size={size} />
-          ),
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: theme.colors.onPrimaryContainer,
+          tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+          tabBarActiveBackgroundColor: theme.colors.primaryContainer,
+          tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+          tabBarItemStyle: { borderRadius: 16, marginVertical: 6 },
+          tabBarStyle: {
+            backgroundColor: theme.colors.surface,
+            borderTopColor: theme.colors.outlineVariant,
+            height: 64,
+            paddingTop: 6,
+            paddingBottom: 6,
+          },
         }}
-      />
-      <Tab.Screen
-        name="History"
-        component={HistoryScreen}
-        options={{
-          title: 'Historial',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="history" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Info"
-        component={InfoScreen}
-        options={{
-          title: 'Info',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="information" color={color} size={size} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+      >
+        <Tab.Screen
+          name="Dashboard"
+          component={DashboardScreen}
+          options={{
+            title: 'Inicio',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="home" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="History"
+          component={HistoryScreen}
+          options={{
+            title: 'Historial',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="history" color={color} size={size} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Info"
+          component={InfoScreen}
+          options={{
+            title: 'Info',
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="information" color={color} size={size} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </SafeAreaView>
   );
 }
 
@@ -110,6 +116,7 @@ export default function RootNavigator() {
         headerTintColor: theme.colors.onSurface,
         headerTitleStyle: { fontWeight: 'bold' },
         headerShadowVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
         contentStyle: { backgroundColor: theme.colors.background },
       }}
     >
